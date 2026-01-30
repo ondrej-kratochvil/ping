@@ -77,8 +77,13 @@ DEBUG=true                   # Debug mód (true/false)
 ping/
 ├── api.php                  # Backend API endpoint
 ├── index.html              # Hlavní frontend aplikace
+├── style.css               # CSS styly aplikace
 ├── config/
 │   └── config.php          # Konfigurace databáze a prostředí
+├── docs/                   # Dokumentace (viz sekce Dokumentace)
+├── migrations/             # SQL migrační skripty
+├── tests/                  # Testovací soubory
+├── js/                     # JavaScript utility
 ├── cypress/                # Cypress E2E testy
 ├── data/                   # Data soubory (pokud jsou)
 ├── .env.localhost          # Lokální konfigurace (NEPŘIDÁVAT DO GIT)
@@ -88,6 +93,23 @@ ping/
 ├── package.json            # Node.js závislosti
 └── README.md               # Tento soubor
 ```
+
+## 📚 Dokumentace
+
+Všechna dokumentace je umístěna ve složce `/docs`:
+
+- **[MANUAL_TEST_SUITE.md](docs/MANUAL_TEST_SUITE.md)** - Kompletní sada manuálních testů
+- **[TESTING_SOLUTION.md](docs/TESTING_SOLUTION.md)** - Řešení problému s dynamickými `aria-ref` atributy
+- **[TESTING_HELPERS.md](docs/TESTING_HELPERS.md)** - Helper funkce pro automatizované testování
+- **[TESTING_QUICK_REFERENCE.md](docs/TESTING_QUICK_REFERENCE.md)** - Rychlý referenční průvodce pro testování
+- **[TESTING_BROWSER_TOOLS_GUIDE.md](docs/TESTING_BROWSER_TOOLS_GUIDE.md)** - Průvodce používáním Browser nástrojů
+- **[MANUAL_TESTING_GUIDE.md](docs/MANUAL_TESTING_GUIDE.md)** - Průvodce rychlým manuálním testováním
+- **[MISSING_IMPLEMENTATIONS.md](docs/MISSING_IMPLEMENTATIONS.md)** - Seznam chybějících implementací v UI
+- **[TESTING_IMPROVEMENTS.md](docs/TESTING_IMPROVEMENTS.md)** - Detailní návrhy na zlepšení testování
+- **[TEST_SWAP_SIDES.md](docs/TEST_SWAP_SIDES.md)** - Dokumentace k funkci prohození stran
+- **[INSTALACE_NODEJS.md](docs/INSTALACE_NODEJS.md)** - Instalační průvodce pro Node.js
+- **[REFACTORING_PLAN.md](docs/REFACTORING_PLAN.md)** - Plán refaktoringu
+- **[STATUS_IMPLEMENTACE.md](docs/STATUS_IMPLEMENTACE.md)** - Status implementace funkcionalit
 
 ## 🗄️ Databáze
 
@@ -111,11 +133,19 @@ Pro přidání nových sloupců nebo změny struktury použijte migrační skrip
 
 ## 🎮 Funkcionality
 
+### Uživatelské rozhraní
+
+Aplikace má responzivní design optimalizovaný pro mobilní zařízení i desktop:
+
+- **Toast notifikace**: Po úspěšném vytvoření turnaje nebo uložení nastavení se zobrazí mizející upozornění vpravo dole
+- **Mobilní optimalizace**: Tlačítka se automaticky přizpůsobí úzkým displejům, aby zůstala viditelná
+- **Inteligentní autocomplete**: Při vytváření turnaje se seznam hráčů zobrazí automaticky a zůstane otevřený, dokud není dosaženo minimálního počtu hráčů (2 pro dvouhru, 4 pro čtyřhru)
+
 ### Kopírování turnaje
 
 Aplikace umožňuje rychlé kopírování turnaje pro pokračování s novým turnajem:
 
-- **Kde najdete:** 
+- **Kde najdete:**
   - V nastavení turnaje (tlačítko "Kopírovat turnaj")
   - Po ukončení turnaje (tlačítko "Kopírovat turnaj" vedle "Zavřít")
 
@@ -129,6 +159,15 @@ Aplikace umožňuje rychlé kopírování turnaje pro pokračování s novým tu
   - Automatické prohození stran hráčů (hráči, kteří hráli vlevo, budou vpravo a naopak)
   - **Pro čtyřhru:** Při kopírování turnaje čtyřhry se navíc otočí pořadí hráčů v rámci každého týmu, aby se změnilo pořadí podání (např. z A1, B1, A2, B2 na B2, A2, B1, A1)
   - Nový turnaj je připraven k okamžitému spuštění
+
+**Výběr hráčů:**
+- Při otevření modalu pro vytvoření turnaje se okamžitě zobrazí seznam dostupných hráčů (maximálně 10)
+- Seznam zůstane otevřený po výběru hráče, dokud není dosažen minimální počet hráčů (2 pro dvouhru, 4 pro čtyřhru)
+- Po dosažení minimálního počtu se seznam automaticky zavře
+- Seznam se znovu otevře při kliknutí do pole pro výběr hráče
+- Seznam se automaticky filtruje při psaní jména hráče
+- Hráči, kteří už jsou v turnaji, se nezobrazují v seznamu
+- Pro výběr hráče klikněte na jeho jméno v seznamu nebo použijte šipky nahoru/dolů a Enter
   - **Inteligentní názvy:** Pokud turnaj obsahuje dnešní datum, použije se stávající logika s číslem. Pokud obsahuje starší datum, použije se dnešní datum v názvu (např. "Turnaj 20. 11. 2025")
 
 ### Čtyřhra (doubles)
@@ -240,7 +279,9 @@ Hlasový asistent poskytuje hlasové hlášení během zápasu:
 
 - **Hlášení skóre:** Při každém přidání bodu hlásí jméno hráče s podáním a aktuální skóre (např. "Jan, 5 : 3")
 - **Konec zápasu:** Po ukončení zápasu hlásí vítěze a finální skóre
-- **Motivační hlášky:** Pokud jsou zapnuté, přidává náhodné motivační hlášky s pravděpodobností 40% (např. "Pojď, draku!", "To byl úder!")
+- **Motivační hlášky:** Pokud jsou zapnuté, přidává náhodné motivační hlášky vždy při každém bodu. Hlášky jsou inteligentně vybírány podle situace:
+  - **Obecné hlášky** - vhodné kdykoliv během zápasu (např. "Pojď, draku!", "To byl úder!", "Paráda!")
+  - **Hlášky pro blízký konec** - když jeden hráč potřebuje 1-2 body k vítězství (např. "Ještě jeden!", "Téměř tam!", "Poslední bod!")
 
 **Technické detaily:**
 - Používá Web Speech API (SpeechSynthesis)

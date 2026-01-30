@@ -1,0 +1,29 @@
+name: Deploy to FTP
+
+# Projekt je nasazen na subdoméně. Na Českém hostingu platí: přístup do subdomén
+# funguje pouze přes FTP (ne SFTP) – SFTP/SCP je jen pro hlavní hostingový prostor domény.
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy to FTP
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Remove excluded files
+        run: |
+          rm -rf .git .github node_modules cypress tests docs .env.example README.md package.json package-lock.json vitest.config.js || true
+
+      - name: FTP Deploy
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: ${{ secrets.FTP_TARGET_DIR }}
+          protocol: ftp
+          port: 21

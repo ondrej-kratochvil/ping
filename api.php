@@ -1,17 +1,43 @@
 <?php
+// Error handling - v produkci logujeme, ale nezobrazujeme detaily
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
 header("Content-Type: application/json");
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
 
-$config = require 'config/config.php';
+try {
+    $config = require 'config/config.php';
+} catch (Exception $e) {
+    http_response_code(500);
+    error_log("Config error: " . $e->getMessage());
+    echo json_encode(['error' => 'Configuration error']);
+    exit();
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit(0); }
 
-$conn = new mysqli($config['db']['host'], $config['db']['user'], $config['db']['pass'], $config['db']['name']);
-if ($conn->connect_error) {
-    http_response_code(500); echo json_encode(['error' => "Connection failed: " . $conn->connect_error]); exit();
+// Při chybějícím .env vrátíme srozumitelnou chybu (bez volání mysqli s null)
+$db = $config['db'];
+if (empty($db['name']) || $db['user'] === null || $db['user'] === '') {
+    http_response_code(503);
+    error_log('DB not configured: missing .env (DB_NAME, DB_USER, DB_PASS). Copy .env.example to .env or .env.localhost.');
+    echo json_encode(['error' => 'Database not configured. Copy .env.example to .env (or .env.localhost) and set DB_NAME, DB_USER, DB_PASS.']);
+    exit();
 }
+
+$conn = @new mysqli($db['host'], $db['user'], $db['pass'] ?? '', $db['name']);
+
+if ($conn->connect_error) {
+    http_response_code(500);
+    error_log("DB Connection error: " . $conn->connect_error);
+    echo json_encode(['error' => "Connection failed: " . $conn->connect_error]);
+    exit();
+}
+
 $conn->set_charset($config['db']['charset']);
 
 define('TOURNAMENT_TYPE_SINGLE', 'single');
@@ -249,7 +275,10 @@ function handleReorderMatches($conn, $payload) {
 
 function handleSwapSides($conn, $payload) {
     $matchId = $payload['matchId'] ?? null;
-    if (!$matchId) return;
+    if (!$matchId) {
+        error_log("handleSwapSides: matchId is null");
+        return;
+    }
     $matchId = intval($matchId);
 
     // 1. Najdeme aktuální záznam
@@ -258,32 +287,47 @@ function handleSwapSides($conn, $payload) {
     $stmt->execute();
     $dbMatch = $stmt->get_result()->fetch_assoc();
 
-    if ($dbMatch) {
-        // 2. Zneplatníme starý záznam
-        $stmtUpdate = $conn->prepare("UPDATE matches SET valid_to = NOW() WHERE entity_id = ? AND valid_to IS NULL");
-        $stmtUpdate->bind_param("i", $matchId);
-        $stmtUpdate->execute();
+    if (!$dbMatch) {
+        error_log("handleSwapSides: Match with entity_id $matchId not found");
+        return;
+    }
 
-        // 3. Vložíme nový záznam s prohozenou hodnotou
-        $newSidesSwapped = !$dbMatch['sides_swapped'];
-        $stmtInsert = $conn->prepare("INSERT INTO matches (entity_id, tournament_id, player1_id, player2_id, team1_id, team2_id, score1, score2, completed, first_server, serving_player, match_order, sides_swapped, double_rotation_state) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmtInsert->bind_param("iiiiiiiiiiiiiis", 
-            $matchId, 
-            $dbMatch['tournament_id'], 
-            $dbMatch['player1_id'], 
-            $dbMatch['player2_id'], 
-            $dbMatch['team1_id'],
-            $dbMatch['team2_id'],
-            $dbMatch['score1'], 
-            $dbMatch['score2'], 
-            $dbMatch['completed'], 
-            $dbMatch['first_server'], 
-            $dbMatch['serving_player'], 
-            $dbMatch['match_order'], 
-            $newSidesSwapped,
-            $dbMatch['double_rotation_state']
-        );
-        $stmtInsert->execute();
+    // 2. Zneplatníme starý záznam
+    $stmtUpdate = $conn->prepare("UPDATE matches SET valid_to = NOW() WHERE entity_id = ? AND valid_to IS NULL");
+    $stmtUpdate->bind_param("i", $matchId);
+    if (!$stmtUpdate->execute()) {
+        error_log("handleSwapSides: Failed to invalidate old match: " . $stmtUpdate->error);
+        return;
+    }
+
+    // 3. Vložíme nový záznam s prohozenou hodnotou – vždy placeholder ?, double_rotation_state bindujeme (i NULL)
+    $newSidesSwapped = !$dbMatch['sides_swapped'];
+    $rotVal = $dbMatch['double_rotation_state'] ?? null;
+    $sqlInsert = "INSERT INTO matches (entity_id, tournament_id, player1_id, player2_id, team1_id, team2_id, score1, score2, completed, first_server, serving_player, match_order, sides_swapped, double_rotation_state) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    $stmtInsert = $conn->prepare($sqlInsert);
+    if (!$stmtInsert) {
+        error_log("handleSwapSides: Failed to prepare insert: " . $conn->error);
+        return;
+    }
+    $stmtInsert->bind_param("iiiiiiiiiiiiis",
+        $matchId,
+        $dbMatch['tournament_id'],
+        $dbMatch['player1_id'],
+        $dbMatch['player2_id'],
+        $dbMatch['team1_id'],
+        $dbMatch['team2_id'],
+        $dbMatch['score1'],
+        $dbMatch['score2'],
+        $dbMatch['completed'],
+        $dbMatch['first_server'],
+        $dbMatch['serving_player'],
+        $dbMatch['match_order'],
+        $newSidesSwapped,
+        $rotVal
+    );
+    if (!$stmtInsert->execute()) {
+        error_log("handleSwapSides: Failed to insert new match: " . $stmtInsert->error);
+        return;
     }
 }
 
@@ -442,10 +486,20 @@ function handleUpdateMatch($conn, $payload) {
     $stmt->bind_param("i", $id);
     $stmt->execute();
     $dbMatch = $stmt->get_result()->fetch_assoc();
+    $foundCurrentRecord = (bool) $dbMatch;
 
+    // Pokud nenajdeme platný záznam, zkusíme najít poslední záznam (i když má valid_to)
     if (!$dbMatch) {
-        error_log("handleUpdateMatch: Zápas s entity_id $id nebyl nalezen");
-        return;
+        $stmtLast = $conn->prepare("SELECT tournament_id, player1_id, player2_id, score1, score2, completed, first_server, serving_player, sides_swapped, team1_id, team2_id, match_order, double_rotation_state FROM matches WHERE entity_id = ? ORDER BY id DESC LIMIT 1");
+        $stmtLast->bind_param("i", $id);
+        $stmtLast->execute();
+        $dbMatch = $stmtLast->get_result()->fetch_assoc();
+        
+        if (!$dbMatch) {
+            error_log("handleUpdateMatch: Zápas s entity_id $id nebyl nalezen ani v historii");
+            return;
+        }
+        // $dbMatch zůstává s hodnotami z DB – porovnání s $data pak správně určí hasChanges a případně provede INSERT nové verze
     }
 
     // Normalizace hodnot pro porovnání (NULL -> 0 nebo false)
@@ -477,9 +531,12 @@ function handleUpdateMatch($conn, $payload) {
     );
 
     if ($hasChanges) {
-        $stmtUpdate = $conn->prepare("UPDATE matches SET valid_to = NOW() WHERE entity_id = ? AND valid_to IS NULL");
-        $stmtUpdate->bind_param("i", $id);
-        $stmtUpdate->execute();
+        // Invalidovat aktuální záznam jen pokud existuje (valid_to IS NULL). Při fallbacku na historický záznam žádný aktuální záznam není – nevoláme UPDATE.
+        if ($foundCurrentRecord) {
+            $stmtUpdate = $conn->prepare("UPDATE matches SET valid_to = NOW() WHERE entity_id = ? AND valid_to IS NULL");
+            $stmtUpdate->bind_param("i", $id);
+            $stmtUpdate->execute();
+        }
 
         // Zajistíme, že všechny hodnoty jsou správně definované
         // Pro player1Id a player2Id musíme použít hodnotu z databáze, pokud není v datech (NOT NULL constraint)
@@ -521,7 +578,12 @@ function handleUpdateMatch($conn, $payload) {
             $sql .= "NULL, ";
         }
         
-        $sql .= "?, ?, ?)";
+        // double_rotation_state může být NULL – nebindujeme jako "s"
+        if ($normalizedRotationState === null) {
+            $sql .= "?, ?, NULL)";
+        } else {
+            $sql .= "?, ?, ?)";
+        }
         
         $stmtInsert = $conn->prepare($sql);
         if (!$stmtInsert) {
@@ -568,13 +630,16 @@ function handleUpdateMatch($conn, $payload) {
             $bindParams[] = &$bindServingPlayer;
         }
         
-        $types .= "iis";
+        $types .= "ii";
         $bindMatchOrder = $matchOrder;
         $bindSidesSwapped = $dataSidesSwapped;
-        $bindRotationState = $normalizedRotationState;
         $bindParams[] = &$bindMatchOrder;
         $bindParams[] = &$bindSidesSwapped;
-        $bindParams[] = &$bindRotationState;
+        if ($normalizedRotationState !== null) {
+            $types .= "s";
+            $bindRotationState = $normalizedRotationState;
+            $bindParams[] = &$bindRotationState;
+        }
         
         // Použijeme call_user_func_array pro bind_param s dynamickým počtem parametrů
         $bindResult = call_user_func_array([$stmtInsert, 'bind_param'], $bindParams);

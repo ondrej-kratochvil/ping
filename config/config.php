@@ -28,17 +28,19 @@ function loadEnvFile($envFile) {
 
 // Určení, který .env soubor použít
 // Priorita: 1) .env.localhost (pro localhost), 2) .env.production (pro produkci), 3) .env
+// Zkusíme najít .env soubor - nejprve v kořenovém adresáři projektu (o úroveň výš než config/)
+$rootDir = dirname(__DIR__);
 $envFile = null;
 $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
 if (strpos($host, 'localhost') !== false || strpos($host, '127.0.0.1') !== false || $host === 'localhost') {
-    $envFile = __DIR__ . '/../.env.localhost';
+    $envFile = $rootDir . '/.env.localhost';
 } else {
-    $envFile = __DIR__ . '/../.env.production';
+    $envFile = $rootDir . '/.env.production';
 }
 
 // Pokud neexistuje specifický soubor, zkus .env
 if (!file_exists($envFile)) {
-    $envFile = __DIR__ . '/../.env';
+    $envFile = $rootDir . '/.env';
 }
 
 // Načtení hodnot z .env souboru
@@ -59,15 +61,18 @@ function getEnvValue($key, $default = null) {
     return $default;
 }
 
+// DB přihlašovací údaje: záměrně bez výchozích hodnot (null). Nesmí být v gitu.
+// Aplikace vyžaduje .env soubor – zkopírujte .env.example jako .env nebo .env.localhost
+// a nastavte DB_NAME, DB_USER, DB_PASS. Při chybějícím .env api.php vrátí srozumitelnou chybu.
 $config = [
     'db' => [
         'host' => getEnvValue('DB_HOST', '127.0.0.1'),
-        'name' => getEnvValue('DB_NAME', 'sensiocz02'),
-        'user' => getEnvValue('DB_USER', 'root'),
-        'pass' => getEnvValue('DB_PASS', 'vertrigo'),
+        'name' => getEnvValue('DB_NAME', null),
+        'user' => getEnvValue('DB_USER', null),
+        'pass' => getEnvValue('DB_PASS', null),
         'charset' => 'utf8mb4'
     ],
-    'debug' => filter_var(getEnvValue('DEBUG', 'true'), FILTER_VALIDATE_BOOLEAN)
+    'debug' => filter_var(getEnvValue('DEBUG', 'false'), FILTER_VALIDATE_BOOLEAN)
 ];
 
 return $config;
