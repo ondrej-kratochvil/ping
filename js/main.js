@@ -3,14 +3,41 @@
 import { initUI, getModalsContainer, getScreens, closeModal, showConfirmModal, showAlertModal } from './ui.js';
 import { loadState, apiCall } from './api.js';
 import { renderMainScreen } from './render.js';
-import { allActions, updateScore } from './actions.js';
+import { allActions, updateScore, undoLastPoint } from './actions.js';
 import { state } from './state.js';
 import { getTournament, getMatch } from './utils.js';
 import { checkWinCondition } from './game-logic.js';
 import { initializeAudio, speak } from './audio.js';
+import { voiceInput } from './voice-input.js';
+// APP_VERSION definujeme zde, abychom se vyhnuli problémům s cachováním constants.js
+const APP_VERSION = '1.1.3';
 
 document.addEventListener('DOMContentLoaded', () => {
     initUI();
+    
+    // Znovu nastavíme verzi pro jistotu
+    const versionEl = document.getElementById('app-version');
+    if (versionEl) versionEl.textContent = APP_VERSION;
+    
+    // Inicializace voice input s potřebnými akcemi
+    voiceInput.init({
+        updateScore,
+        undoLastPoint,
+        setFirstServer: (playerId) => {
+             // Wrapper pro setFirstServer, který simuluje kliknutí nebo volá logiku
+             // Protože allActions['set-first-server'] očekává target s datasetem,
+             // musíme si pomoci nebo zavolat logiku přímo.
+             // Pro jednoduchost zde zavoláme existující akci s fake targetem.
+             allActions['set-first-server']({ dataset: { playerId: playerId } });
+        },
+        swapSides: () => {
+             const t = getTournament();
+             const m = getMatch(t, state.activeMatchId);
+             if (m) allActions['swap-sides']({ dataset: { id: m.id } });
+        },
+        suspendMatch: () => allActions['suspend-match']()
+    });
+
     const app = document.getElementById('app');
     const modalsContainer = getModalsContainer();
     const screens = getScreens();

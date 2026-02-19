@@ -1,6 +1,7 @@
 // Akce aplikace (allActions) – přesunuto z index.html
 
 import { state } from './state.js';
+import { voiceInput } from './voice-input.js';
 import { TOURNAMENT_TYPES, playerColors, encouragingPhrases, winningPhrases } from './constants.js';
 import { apiCall, loadState } from './api.js';
 import { openModal, closeModal, showAlertModal, showConfirmModal, showToast, renderGameScreen } from './ui.js';
@@ -112,7 +113,9 @@ export const updateScore = async (playerId, delta, sideOverride = null) => {
         }
         playSound(scoringSide);
 
-        if (state.settings.voiceAssistEnabled) {
+        const shouldReportScore = state.settings.voiceAssistEnabled || state.settings.voiceInputEnabled;
+
+        if (shouldReportScore) {
             const side1Players = getSidePlayerIds(t, m, 1);
             const side2Players = getSidePlayerIds(t, m, 2);
             const servingSide = side1Players.includes(m.servingPlayer) ? 1 : (side2Players.includes(m.servingPlayer) ? 2 : null);
@@ -126,7 +129,7 @@ export const updateScore = async (playerId, delta, sideOverride = null) => {
                     const winnerLabel = formatPlayersLabel(winnerSide === 1 ? side1Players : side2Players);
                     const winnerScore = Math.max(m.score1, m.score2);
                     const loserScore = Math.min(m.score1, m.score2);
-                    speak(`Konec zápasu. Vítěz ${winnerLabel}. ${winnerScore} : ${loserScore}`);
+                    speak(`Konec zápasu. Vítěz ${winnerLabel}. ${winnerScore} : ${loserScore}`, true);
                 }
             } else if (servingLabel) {
                 let speechText = `${servingLabel}, ${servingPlayerScore} : ${otherPlayerScore}`;
@@ -150,7 +153,7 @@ export const updateScore = async (playerId, delta, sideOverride = null) => {
                         speechText += `, ${selectedPhrase}`;
                     }
                 }
-                speak(speechText);
+                speak(speechText, state.settings.voiceInputEnabled);
             }
         }
 
@@ -163,7 +166,50 @@ export const updateScore = async (playerId, delta, sideOverride = null) => {
 
 export const allActions = {
     'show-player-db': renderPlayerDbScreen,
-    'show-edit-player-modal':(target)=>{const playerId=target.dataset.id==='new'?null:parseInt(target.dataset.id);const p=playerId?getGlobalPlayer(playerId):{name:'',photoUrl:'',strengths:'',weaknesses:''};openModal(`<div id="edit-player-modal" class="modal-backdrop"><div class="modal-content space-y-4"><div class="flex justify-between items-center"><h2 class="text-xl font-bold">${playerId?'Upravit hráče':'Nový hráč'}</h2><button data-action="close-modal" class="text-gray-400 text-2xl hover:text-gray-700">&times;</button></div><div class="text-center"><img src="${p.photoUrl||`data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%2280%22%20height%3D%2280%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%2280%22%20height%3D%2280%22%20fill%3D%22%23e5e7eb%22%20rx%3D%2240%22%2F%3E${p.name?`%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20dominant-baseline%3D%22central%22%20text-anchor%3D%22middle%22%20font-family%3D%22Inter%22%20font-size%3D%2232%22%20fill%3D%22%239ca3af%22%3E${p.name.charAt(0).toUpperCase()}%3C%2Ftext%3E`:''}%3C%2Fsvg%3E`}" class="w-20 h-20 rounded-full object-cover bg-gray-200 inline-block"></div><div><label for="player-name" class="text-sm font-medium">Jméno</label><input id="player-name" value="${p.name}" class="w-full mt-1 p-2 border rounded-md"></div><div><label for="player-photo" class="text-sm font-medium">URL fotografie</label><input id="player-photo" value="${p.photoUrl||''}" placeholder="https://..." class="w-full mt-1 p-2 border rounded-md"></div><div><label for="player-strengths" class="text-sm font-medium">Silné stránky</label><textarea id="player-strengths" class="w-full mt-1 p-2 border rounded-md h-20">${p.strengths||''}</textarea></div><div><label for="player-weaknesses" class="text-sm font-medium">Slabé stránky</label><textarea id="player-weaknesses" class="w-full mt-1 p-2 border rounded-md h-20">${p.weaknesses||''}</textarea></div><div class="flex gap-2"><button data-action="close-modal" class="btn btn-secondary w-full">Zrušit</button><button data-action="save-player" data-id="${playerId||''}" class="btn btn-primary w-full">Uložit</button></div></div></div>`);document.getElementById('edit-player-modal').addEventListener('keydown', (e)=>{ if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); document.querySelector('[data-action="save-player"]').click(); } });document.getElementById('player-name').focus();},
+    'show-edit-player-modal':(target)=>{
+        const playerId=target.dataset.id==='new'?null:parseInt(target.dataset.id);
+        const p=playerId?getGlobalPlayer(playerId):{name:'',nickname:'',photoUrl:'',strengths:'',weaknesses:''};
+        openModal(`
+            <div id="edit-player-modal" class="modal-backdrop">
+                <div class="modal-content space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-xl font-bold">${playerId?'Upravit hráče':'Nový hráč'}</h2>
+                        <button data-action="close-modal" class="text-gray-400 text-2xl hover:text-gray-700">&times;</button>
+                    </div>
+                    <div class="text-center">
+                        <img src="${p.photoUrl||`data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%2280%22%20height%3D%2280%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%2280%22%20height%3D%2280%22%20fill%3D%22%23e5e7eb%22%20rx%3D%2240%22%2F%3E${p.name?`%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20dominant-baseline%3D%22central%22%20text-anchor%3D%22middle%22%20font-family%3D%22Inter%22%20font-size%3D%2232%22%20fill%3D%22%239ca3af%22%3E${p.name.charAt(0).toUpperCase()}%3C%2Ftext%3E`:''}%3C%2Fsvg%3E`}" class="w-20 h-20 rounded-full object-cover bg-gray-200 inline-block">
+                    </div>
+                    <div>
+                        <label for="player-name" class="text-sm font-medium">Jméno</label>
+                        <input id="player-name" value="${p.name}" class="w-full mt-1 p-2 border rounded-md">
+                    </div>
+                    <div>
+                        <label for="player-nickname" class="text-sm font-medium">Přezdívka (pro hlasové ovládání)</label>
+                        <input id="player-nickname" value="${p.nickname||''}" placeholder="Např. Marťas" class="w-full mt-1 p-2 border rounded-md">
+                        <p class="text-xs text-gray-500 mt-1">Použije se pro hlasové povely. Pokud je prázdná, použije se jméno.</p>
+                    </div>
+                    <div>
+                        <label for="player-photo" class="text-sm font-medium">URL fotografie</label>
+                        <input id="player-photo" value="${p.photoUrl||''}" placeholder="https://..." class="w-full mt-1 p-2 border rounded-md">
+                    </div>
+                    <div>
+                        <label for="player-strengths" class="text-sm font-medium">Silné stránky</label>
+                        <textarea id="player-strengths" class="w-full mt-1 p-2 border rounded-md h-20">${p.strengths||''}</textarea>
+                    </div>
+                    <div>
+                        <label for="player-weaknesses" class="text-sm font-medium">Slabé stránky</label>
+                        <textarea id="player-weaknesses" class="w-full mt-1 p-2 border rounded-md h-20">${p.weaknesses||''}</textarea>
+                    </div>
+                    <div class="flex gap-2">
+                        <button data-action="close-modal" class="btn btn-secondary w-full">Zrušit</button>
+                        <button data-action="save-player" data-id="${playerId||''}" class="btn btn-primary w-full">Uložit</button>
+                    </div>
+                </div>
+            </div>
+        `);
+        document.getElementById('edit-player-modal').addEventListener('keydown', (e)=>{ if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); document.querySelector('[data-action="save-player"]').click(); } });
+        document.getElementById('player-name').focus();
+    },
     'save-player': async (target) => {
         const playerId = target.dataset.id ? parseInt(target.dataset.id) : null;
         const name = document.getElementById('player-name').value.trim();
@@ -172,6 +218,7 @@ export const allActions = {
             id: playerId,
             data: {
                 name,
+                nickname: document.getElementById('player-nickname').value.trim(),
                 photoUrl: document.getElementById('player-photo').value.trim(),
                 strengths: document.getElementById('player-strengths').value.trim(),
                 weaknesses: document.getElementById('player-weaknesses').value.trim(),
@@ -427,7 +474,11 @@ export const allActions = {
         }
     },
     'back-to-main':renderMainScreen,
-    'back-to-tournament':()=>{closeModal();renderTournamentScreen();},
+    'back-to-tournament':()=>{
+        voiceInput.stop();
+        closeModal();
+        renderTournamentScreen();
+    },
     'show-stats':()=>renderStatsScreen(),
     'export-csv':()=>exportToCSV(),
     'export-pdf':()=>exportToPDF(),
@@ -441,8 +492,16 @@ export const allActions = {
         m.score2 = m.score2 || 0;
         if (!m.firstServer) {
             renderStartMatchModal(m);
+            if (state.settings.voiceInputEnabled) {
+                voiceInput.setContext('setup');
+                voiceInput.start();
+            }
         } else {
             renderGameBoard();
+            if (state.settings.voiceInputEnabled) {
+                voiceInput.setContext('game');
+                voiceInput.start();
+            }
         }
     },
     'set-first-server': async (target) => {
@@ -479,7 +538,7 @@ export const allActions = {
             doubleRotationState: m.doubleRotationState !== undefined ? m.doubleRotationState : (m.double_rotation_state !== undefined ? m.double_rotation_state : null)
         };
         await apiCall('updateMatch', { id: m.id, data: matchPayload });
-        if (state.settings.voiceAssistEnabled) {
+        if (state.settings.voiceAssistEnabled || state.settings.voiceInputEnabled) {
             let servingPlayerName = '';
             if (isDoubleTournament(t)) {
                 if (m.doubleRotationState && m.doubleRotationState.order && m.doubleRotationState.order.length > 0) {
@@ -504,11 +563,15 @@ export const allActions = {
                 }
             }
             if (servingPlayerName) {
-                speak(servingPlayerName);
+                speak(servingPlayerName, state.settings.voiceInputEnabled);
             }
         }
         closeModal();
         renderGameBoard();
+        if (state.settings.voiceInputEnabled) {
+            voiceInput.setContext('game');
+            voiceInput.start();
+        }
     },
     'add-point': (target) => {
         const playerId = target.dataset.playerId ? parseInt(target.dataset.playerId) : null;
@@ -521,8 +584,12 @@ export const allActions = {
         updateScore(null, -1, side);
     },
     'undo-last-point': undoLastPoint,
-    'suspend-match':()=>{renderTournamentScreen();},
+    'suspend-match':()=>{
+        voiceInput.stop();
+        renderTournamentScreen();
+    },
     'save-match-result': async () => {
+        voiceInput.stop();
         const t = getTournament();
         const m = getMatch(t, state.activeMatchId);
         m.completed = true;
@@ -553,7 +620,11 @@ export const allActions = {
         renderTournamentScreen();
     },
     'close-and-refresh':()=>{closeModal();renderTournamentScreen();},
-    'close-and-home':()=>{closeModal();renderMainScreen();},
+    'close-and-home':()=>{
+        voiceInput.stop();
+        closeModal();
+        renderMainScreen();
+    },
     'export-data':async ()=>{if(state.tournaments.length===0&&state.playerDatabase.length===0){await showAlertModal("Není co exportovat.", 'Upozornění');return;}const dataStr=JSON.stringify(state,null,2);const dataBlob=new Blob([dataStr],{type:'application/json'});const url=URL.createObjectURL(dataBlob);const a=document.createElement('a');a.href=url;a.download='ping-pong-turnaje.json';a.click();URL.revokeObjectURL(url);},
     'close-modal': closeModal,
     'toggle-settings-menu': () => {
@@ -565,6 +636,17 @@ export const allActions = {
             document.getElementById('show-locked-toggle').checked = state.settings.showLockedTournaments || false;
             document.getElementById('motivational-phrases-toggle').checked = !!state.settings.motivationalPhrasesEnabled;
         }
+    },
+    'toggle-voice-input-ingame': () => {
+        state.settings.voiceInputEnabled = !state.settings.voiceInputEnabled;
+        apiCall('saveSettings', { key: 'voiceInputEnabled', value: state.settings.voiceInputEnabled });
+        if (state.settings.voiceInputEnabled) {
+            voiceInput.setContext('game');
+            voiceInput.start();
+        } else {
+            voiceInput.stop();
+        }
+        renderGameBoard();
     },
     'toggle-sound-ingame': () => {
         state.settings.soundsEnabled = !state.settings.soundsEnabled;

@@ -66,10 +66,10 @@ function getEnvValue($key, $default = null) {
 // a nastavte DB_NAME, DB_USER, DB_PASS. Při chybějícím .env api.php vrátí srozumitelnou chybu.
 $config = [
     'db' => [
-        'host' => getEnvValue('DB_HOST', '127.0.0.1'),
-        'name' => getEnvValue('DB_NAME', null),
-        'user' => getEnvValue('DB_USER', null),
-        'pass' => getEnvValue('DB_PASS', null),
+        'host' => getEnvValue('MYSQLHOST', getEnvValue('DB_HOST', '127.0.0.1')),
+        'name' => getEnvValue('MYSQL_DATABASE', getEnvValue('DB_NAME', null)),
+        'user' => getEnvValue('MYSQLUSER', getEnvValue('DB_USER', null)),
+        'pass' => getEnvValue('MYSQLPASSWORD', getEnvValue('DB_PASS', null)),
         'charset' => 'utf8mb4'
     ],
     'debug' => filter_var(getEnvValue('DEBUG', 'false'), FILTER_VALIDATE_BOOLEAN)
