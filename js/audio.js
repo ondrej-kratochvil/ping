@@ -23,12 +23,13 @@ export function playSound(playerIndex) {
     oscillator.start(audioContext.currentTime); oscillator.stop(audioContext.currentTime + 0.1);
 }
 
-export function speak(text, force = false) {
+export function speak(text, force = false, onEnd = null) {
     if ((!state.settings.voiceAssistEnabled && !force) || !synth) return;
     // Zrušíme předchozí výstup, pokud nějaký je, aby se zprávy nekumulovaly
     synth.cancel();
     let utterance = new SpeechSynthesisUtterance(text); // Vytvoříme novou instanci pro každou hlášku
     utterance.lang = 'cs-CZ';
     utterance.volume = state.settings.voiceVolume !== undefined ? state.settings.voiceVolume : 1;
+    if (onEnd && typeof onEnd === 'function') { utterance.onend = () => onEnd(); }
     synth.speak(utterance);
 }

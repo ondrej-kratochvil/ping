@@ -1,4 +1,4 @@
-import { state } from './state.js';
+﻿import { state } from './state.js';
 import { getTournament, getMatch, getGlobalPlayer, getSidePlayerIds } from './utils.js';
 import { showToast } from './ui.js';
 import { speak } from './audio.js';
@@ -12,6 +12,7 @@ class VoiceInputManager {
         this.context = 'game'; // 'game' | 'setup'
         this.lang = 'cs-CZ';
         this.restartTimer = null;
+        this.speakingInProgress = false;
         this.processedIndices = new Set();
         
         // Mapování českých příkazů na klíče akcí
@@ -173,7 +174,12 @@ class VoiceInputManager {
             const playerId = this.findPlayerId(text);
             if (playerId) {
                 if (this.actions.setFirstServer) {
-                    this.actions.setFirstServer(playerId);
+                                        const t = getTournament();
+                    const m = getMatch(t, state.activeMatchId);
+                    const side1Ids = getSidePlayerIds(t, m, 1);
+                    const side2Ids = getSidePlayerIds(t, m, 2);
+                    const teamSide = side1Ids.includes(playerId) ? 1 : (side2Ids.includes(playerId) ? 2 : null);
+                    this.actions.setFirstServer(playerId, teamSide);
                     const player = getGlobalPlayer(playerId);
                     showToast(`První podání: ${player.name} (hlasem)`, 'success');
                     return true;
@@ -191,14 +197,14 @@ class VoiceInputManager {
                 if (this.actions.undoLastPoint) {
                     this.actions.undoLastPoint();
                     showToast('Akce vrácena (hlasem)', 'info');
-                    speak('Opravuji');
+                    speak('Opravuji', state.settings.voiceInputEnabled);
                 }
                 break;
             case 'swapSides':
                 if (this.actions.swapSides) {
                     this.actions.swapSides();
                     showToast('Výměna stran (hlasem)', 'info');
-                    speak('Měním strany');
+                    speak('MÄ›nĂ­m strany', state.settings.voiceInputEnabled);
                 }
                 break;
             case 'suspend':
@@ -217,7 +223,8 @@ class VoiceInputManager {
         // 2. Pokud není přesná shoda, zkusíme najít, zda text obsahuje klíčové slovo
         if (!playerId) {
             for (const [key, id] of this.keywords.entries()) {
-                 const regex = new RegExp(`\\b${key}\\b`);
+                 const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                 const regex = new RegExp("(?:^|[^\p{L}])" + escaped + "(?:[^\p{L}]|$)", 'u');
                  if (regex.test(term)) {
                      playerId = id;
                      break; 
@@ -239,6 +246,8 @@ class VoiceInputManager {
     }
 
     handleEnd() {
+        
+        if (this.speakingInProgress) return;
         this.processedIndices.clear();
         if (this.isListening) {
              // Pokud má poslouchat, ale API se zastavilo (např. ticho), restartujeme
@@ -267,6 +276,20 @@ class VoiceInputManager {
             this.isListening = false;
         }
     }
+    pauseForSpeaking() {
+        this.speakingInProgress = true;
+        if (this.restartTimer) clearTimeout(this.restartTimer);
+        this.restartTimer = null;
+        if (this.recognition) try { this.recognition.stop(); } catch(e) { /* ignore */ }
+    }
+
+    resumeAfterSpeaking() {
+        this.speakingInProgress = false;
+        if (this.isListening && this.recognition) {
+            try { this.recognition.start(); } catch(e) { console.error('VoiceInput resume failed', e); }
+        }
+    }
+
 
     stop() {
         if (!this.recognition) return;

@@ -1,0 +1,3 @@
+﻿# UTF-8 encoding pro JavaScript a HTML
+AddDefaultCharset utf-8
+AddCharset utf-8 .js .html .php .json

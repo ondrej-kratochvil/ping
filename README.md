@@ -1,4 +1,4 @@
-# 🏓 Ping Pong Turnajová Aplikace
+﻿# 🏓 Ping Pong Turnajová Aplikace
 
 Aplikace pro správu a sledování ping pong turnajů s podporou více turnajů, statistik a detailního sledování zápasů.
 
@@ -44,7 +44,13 @@ Aplikace pro správu a sledování ping pong turnajů s podporou více turnajů,
      DEBUG=true
      ```
 
-4. **Nastavte web server**
+4. **Nainstalujte zĂˇvislosti** (pro testy)
+   ```bash
+   npm install
+   ```
+   SloĹľka `node_modules` je v `.gitignore` â€“ po klonovĂˇnĂ­ je tĹ™eba spustit `npm install`.
+
+5. **Nastavte web server**
    - Pro WAMP/XAMPP: Umístěte projekt do `www` složky
    - Pro Apache: Nakonfigurujte VirtualHost
    - Otevřete aplikaci v prohlížeči: `http://localhost/a/ping/`

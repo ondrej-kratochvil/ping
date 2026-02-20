@@ -1,4 +1,4 @@
-// Vstupní bod aplikace – inicializace a obsluha událostí
+﻿// Vstupní bod aplikace – inicializace a obsluha událostí
 
 import { initUI, getModalsContainer, getScreens, closeModal, showConfirmModal, showAlertModal } from './ui.js';
 import { loadState, apiCall } from './api.js';
@@ -23,12 +23,8 @@ document.addEventListener('DOMContentLoaded', () => {
     voiceInput.init({
         updateScore,
         undoLastPoint,
-        setFirstServer: (playerId) => {
-             // Wrapper pro setFirstServer, který simuluje kliknutí nebo volá logiku
-             // Protože allActions['set-first-server'] očekává target s datasetem,
-             // musíme si pomoci nebo zavolat logiku přímo.
-             // Pro jednoduchost zde zavoláme existující akci s fake targetem.
-             allActions['set-first-server']({ dataset: { playerId: playerId } });
+        setFirstServer: (playerId, teamSide) => {
+             allActions['set-first-server']({ dataset: { playerId, teamSide } });
         },
         swapSides: () => {
              const t = getTournament();

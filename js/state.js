@@ -1,4 +1,4 @@
-// State management
+﻿// State management
 import { TOURNAMENT_TYPES } from './constants.js';
 
 // Globální state
@@ -30,6 +30,7 @@ export function updateStateWithApiData(data) {
     state.playerDatabase = (data.playerDatabase || []).map(p => ({
         id: parseInt(p.id, 10),
         name: p.name,
+        nickname: p.nickname ?? p.nick_name ?? '',
         photoUrl: p.photo_url,
         strengths: p.strengths,
         weaknesses: p.weaknesses
