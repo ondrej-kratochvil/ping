@@ -26,11 +26,11 @@ Tento dokument poskytuje AI agentům kompletní přehled o struktuře projektu, 
 
 ### Frontend (JavaScript)
 
-**Hlavní soubor:** `index.html`
+**Hlavní soubor:** `index.php`
 - Vanilla JavaScript (žádný framework)
 - Tailwind CSS pro styling
 - Font Awesome pro ikony
-- LocalStorage pro cache (volitelné)
+- History API pro routování (modul `js/router.js`)
 
 ### Databáze
 
@@ -335,6 +335,40 @@ last_sync (TIMESTAMP)
 - Akce je dostupná v `allActions['copy-tournament']`
 - Zobrazuje se v nastavení turnaje a po ukončení turnaje
 - Automaticky generuje číslo kopie na základě existujících turnajů se stejným názvem
+
+## 🧭 Routování (URL)
+
+**Modul:** `js/router.js`
+
+Aplikace používá History API pro routování. Každá obrazovka má vlastní URL – lze odkazovat, sdílet a obnovit stránku bez ztráty kontextu.
+
+**Mapování URL** (base path: `/a/ping/` na localhostu, `/` na produkci):
+
+| Route | URL | Obrazovka |
+|-------|-----|-----------|
+| main | `/` | Hlavní obrazovka |
+| tournament-new | `/tournament/new` | Modal nového turnaje |
+| tournament | `/tournament/:id` | Obrazovka turnaje |
+| tournament-settings | `/tournament/:id/settings` | Modal nastavení turnaje |
+| tournament-stats | `/tournament/:id/stats` | Statistiky turnaje |
+| match | `/tournament/:id/match/:matchId` | Herní obrazovka |
+| players | `/players` | Databáze hráčů |
+| player-new | `/players/new` | Modal nového hráče |
+| player-edit | `/players/:id` | Modal úpravy hráče |
+| stats-overall | `/stats/overall` | Celkové statistiky |
+
+**Klíčové funkce:**
+- `getBase()` – vrací base path podle prostředí
+- `parseRoute(path)` – parsuje cestu na objekt route
+- `navigateTo(route)` – pushState + vykreslení
+- `initRouter(applyRoute)` – poslouchá `popstate`
+- `isModalRoute(route)` – určuje, zda zavření modalu má volat `history.back()`
+
+**Konfigurace:**
+- `.htaccess` – rewrite neexistujících cest na `index.php`
+- `index.php` – dynamický `<base href>` podle prostředí
+
+**Neplatné ID:** Zobrazí se chybová hláška na nadřazené obrazovce (např. neexistující zápas → hláška na obrazovce turnaje).
 
 ## 🎮 Frontend funkcionality
 
