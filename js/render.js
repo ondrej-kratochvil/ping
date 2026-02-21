@@ -180,12 +180,23 @@ export function renderTournamentScreen() {
             ? stats.filter(s => s.wins === stats[0].wins && (s.scoreFor - s.scoreAgainst) === (stats[0].scoreFor - stats[0].scoreAgainst))
             : [];
         const rest = stats.slice(firstPlace.length);
-        const trophyIcons = ['', '🥈', '🥉'];
+        const getDisplayPos = (statsArr, i) => {
+            if (i === 0) return 1;
+            const prev = statsArr[i - 1], curr = statsArr[i];
+            const same = prev.wins === curr.wins && (prev.scoreFor - prev.scoreAgainst) === (curr.scoreFor - curr.scoreAgainst);
+            return same ? getDisplayPos(statsArr, i - 1) : i + 1;
+        };
+        const trophyByPlace = { 1: '🏆', 2: '🥈', 3: '🥉' };
         const firstPlaceHtml = firstPlace.length > 0
             ? `<p class="text-gray-600">Celkovým vítězem${firstPlace.length > 1 ? ' jsou' : ' je'}</p>${firstPlace.map(s => `<p class="text-3xl font-bold my-2">🏆 ${s.player.name}</p>`).join('')}`
             : '';
         const restHtml = rest.length > 0
-            ? `<ol class="space-y-3 mt-4 text-left inline-block">${rest.map((s, i) => `<li class="flex items-center text-lg"><span class="font-bold w-10 text-center">${i < 2 ? trophyIcons[i+1] : `#${i + firstPlace.length + 1}`}</span><span>${s.player.name}</span></li>`).join('')}</ol>`
+            ? `<ol class="space-y-3 mt-4 text-left inline-block">${rest.map((s, i) => {
+                const idx = firstPlace.length + i;
+                const pos = getDisplayPos(stats, idx);
+                const label = trophyByPlace[pos] ?? `#${pos}`;
+                return `<li class="flex items-center text-lg"><span class="font-bold w-10 text-center">${label}</span><span>${s.player.name}</span></li>`;
+            }).join('')}</ol>`
             : '';
         finalResultsContainer.innerHTML = `<div class="bg-white p-6 rounded-xl shadow-sm text-center"><h2 class="text-2xl font-bold mb-2">Turnaj skončil!</h2>${firstPlaceHtml}${restHtml}</div>`;
     } else {
