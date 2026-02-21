@@ -49,6 +49,7 @@ export const undoLastPoint = async () => {
     m.servingPlayer = lastState.servingPlayer;
     m.firstServer = lastState.firstServer;
     m.doubleRotationState = cloneState(lastState.doubleRotationState);
+    state.lastPointTimestamp = lastState.lastPointTimestamp ?? null;
 
     // Znovu vypočítáme stav podání
     if (m.firstServer) {
@@ -93,7 +94,8 @@ export const updateScore = async (playerId, delta, sideOverride = null) => {
                 score2: m.score2,
                 servingPlayer: m.servingPlayer,
                 firstServer: m.firstServer,
-                doubleRotationState: cloneState(m.doubleRotationState)
+                doubleRotationState: cloneState(m.doubleRotationState),
+                lastPointTimestamp: prevTimestamp
             });
         }
         m[scoreProp] += delta;
