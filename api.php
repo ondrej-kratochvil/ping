@@ -324,7 +324,10 @@ function orderMatchesForTeamRotation($teamPairs) {
         $id1 = $pair[0]['entity_id'];
         $id2 = $pair[1]['entity_id'];
         $pairs[] = [$id1, $id2];
-        $pairByKey[$id1 . '_' . $id2] = $pair;
+        $key1 = $id1 . '_' . $id2;
+        $key2 = $id2 . '_' . $id1;
+        $pairByKey[$key1] = $pair;
+        $pairByKey[$key2] = $pair;
     }
     $orderedIds = orderMatchesForPlayerRotation($pairs);
     $result = [];
