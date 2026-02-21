@@ -156,7 +156,7 @@ export const updateScore = async (playerId, delta, sideOverride = null) => {
                     } else if (intervalSec < 3 && prevTimestamp) {
                         // Body rychle po sobě
                         selectedPhrase = encouragingPhrases.speedPhrases[Math.floor(Math.random() * encouragingPhrases.speedPhrases.length)];
-                    } else if (intervalSec > 15) {
+                    } else if (intervalSec > 15 && prevTimestamp) {
                         // Body dlouho po sobě (dlouhá výměna)
                         selectedPhrase = encouragingPhrases.longRallyPhrases[Math.floor(Math.random() * encouragingPhrases.longRallyPhrases.length)];
                     } else {
