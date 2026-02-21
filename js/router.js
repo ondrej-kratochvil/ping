@@ -1,18 +1,24 @@
 // Router – History API, konfigurovatelný base path
 
 /**
- * Vrací base path podle prostředí.
- * Localhost: /a/ping, Produkce (root): ''
+ * Vrací base path podle prostředí (stejné jako PHP <base href>).
+ * Localhost: /a/ping/, Produkce (root): /
  */
 export function getBase() {
-    return window.location.pathname.startsWith('/a/ping') ? '/a/ping' : '';
+    return window.location.pathname.startsWith('/a/ping') ? '/a/ping/' : '/';
+}
+
+/** Pro path operace – base bez koncové lomítka (nebo '' pro root). */
+function getBaseForPath() {
+    const base = getBase();
+    return base === '/' ? '' : base.replace(/\/$/, '');
 }
 
 /**
  * Vrací aktuální cestu bez base path.
  */
 export function getPath() {
-    const base = getBase();
+    const base = getBaseForPath();
     let path = window.location.pathname;
     if (base && path.startsWith(base)) {
         path = path.slice(base.length) || '/';
@@ -25,7 +31,7 @@ export function getPath() {
  * @returns {{ name: string, tournamentId?: number, matchId?: number, playerId?: number }}
  */
 export function parseRoute(path) {
-    const base = getBase();
+    const base = getBaseForPath();
     let p = path || getPath();
     if (base && p.startsWith(base)) {
         p = p.slice(base.length) || '/';
@@ -79,7 +85,7 @@ export function parseRoute(path) {
  * Sestaví plnou cestu včetně base.
  */
 export function buildPath(route) {
-    const base = getBase();
+    const base = getBaseForPath();
     let path = '';
     switch (route.name) {
         case 'main': path = '/'; break;
