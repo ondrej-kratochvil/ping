@@ -64,9 +64,12 @@ export function renderMainScreen() {
             let winnerInfo = '';
             if (isFinished) { 
                 const stats = calculateStats(t); 
-                const winnerId = stats.length > 0 && stats[0].wins > 0 ? stats[0].player.id : null; 
-                const winner = winnerId ? getGlobalPlayer(winnerId) : null; 
-                winnerInfo = `<p class="font-bold text-yellow-500"><i class="fa-solid fa-trophy"></i> Vítěz: ${winner ? winner.name : 'Remíza'}</p>`; 
+                const firstPlace = stats.length > 0 && stats[0].wins > 0
+                    ? stats.filter(s => s.wins === stats[0].wins && (s.scoreFor - s.scoreAgainst) === (stats[0].scoreFor - stats[0].scoreAgainst) && s.scoreFor === stats[0].scoreFor)
+                    : [];
+                winnerInfo = firstPlace.length > 0
+                    ? firstPlace.map(s => `<p class="font-bold text-yellow-500"><i class="fa-solid fa-trophy"></i> ${s.player.name}</p>`).join('')
+                    : `<p class="font-bold text-yellow-500">Remíza</p>`; 
             }
             const status = getTournamentStatus(t);
             const nameClass = t.isLocked ? 'text-gray-500' : '';
@@ -173,9 +176,18 @@ export function renderTournamentScreen() {
 
     if(isFinished) {
         const stats = calculateStats(t);
-        const winner = stats.length > 0 && stats[0].wins > 0 ? stats[0].player : null;
+        const firstPlace = stats.length > 0 && stats[0].wins > 0
+            ? stats.filter(s => s.wins === stats[0].wins && (s.scoreFor - s.scoreAgainst) === (stats[0].scoreFor - stats[0].scoreAgainst) && s.scoreFor === stats[0].scoreFor)
+            : [];
+        const rest = stats.slice(firstPlace.length);
         const trophyIcons = ['', '🥈', '🥉'];
-        finalResultsContainer.innerHTML = `<div class="bg-white p-6 rounded-xl shadow-sm text-center"><h2 class="text-2xl font-bold mb-2">Turnaj skončil!</h2>${winner ? `<p class="text-gray-600">Celkovým vítězem je</p><p class="text-3xl font-bold my-2">🏆 ${winner.name}</p>` : ''}<ol class="space-y-3 mt-4 text-left inline-block">${stats.slice(1).map((s, i) => `<li class="flex items-center text-lg"><span class="font-bold w-10 text-center">${i + 1 < 3 ? trophyIcons[i+1] : `#${i+2}`}</span><span>${s.player.name}</span></li>`).join('')}</ol></div>`;
+        const firstPlaceHtml = firstPlace.length > 0
+            ? `<p class="text-gray-600">Celkovým vítězem${firstPlace.length > 1 ? ' jsou' : ' je'}</p>${firstPlace.map(s => `<p class="text-3xl font-bold my-2">🏆 ${s.player.name}</p>`).join('')}`
+            : '';
+        const restHtml = rest.length > 0
+            ? `<ol class="space-y-3 mt-4 text-left inline-block">${rest.map((s, i) => `<li class="flex items-center text-lg"><span class="font-bold w-10 text-center">${i < 2 ? trophyIcons[i+1] : `#${i + firstPlace.length + 1}`}</span><span>${s.player.name}</span></li>`).join('')}</ol>`
+            : '';
+        finalResultsContainer.innerHTML = `<div class="bg-white p-6 rounded-xl shadow-sm text-center"><h2 class="text-2xl font-bold mb-2">Turnaj skončil!</h2>${firstPlaceHtml}${restHtml}</div>`;
     } else {
         const upcoming = t.matches.filter(m => !m.completed);
         upcomingContainer.innerHTML = upcoming.length > 0 ? `<h2 class="text-xl font-bold">Nadcházející zápasy</h2>${upcoming.map((m,i) => renderMatch(m, false, i)).join('')}` : (t.matches.length > 0 ? '' : `<div class="text-center p-4 bg-white rounded-xl text-gray-500">Žádné zápasy. Přidejte hráče v nastavení.</div>`);
@@ -187,8 +199,28 @@ export function renderTournamentScreen() {
 }
 
 export const templates = {
-    leaderboardTable: (stats, t) => `<div class="overflow-x-auto"><table class="w-full text-left"><thead><tr class="border-b"><th class="p-2">Poz.</th><th class="p-2">Hráč</th><th class="p-2 text-center">Vítězství</th><th class="p-2 text-center">Porážky</th><th class="p-2 text-center">Odehráno</th><th class="p-2 text-center">Úspěšnost</th></tr></thead><tbody>${stats.map((s, i) => `<tr class="border-b last:border-none"><td class="p-2 font-bold">${i === 0 && s.wins > 0 ? '🏆' : `#${i+1}`}</td><td class="p-2 flex items-center gap-2"><div class="w-4 h-4 rounded-full ${playerColors[t.playerIds.indexOf(s.player.id) % playerColors.length]}"></div> ${s.player.name}</td><td class="p-2 text-center font-bold text-green-600">${s.wins}</td><td class="p-2 text-center text-red-500">${s.losses}</td><td class="p-2 text-center">${s.played}</td><td class="p-2 text-center font-semibold">${s.played > 0 ? Math.round((s.wins / s.played) * 100) : 0}%</td></tr>`).join('')}</tbody></table></div>`,
-    teamLeaderboard: (stats) => stats.length ? `<div class="mt-4"><h3 class="text-lg font-semibold mb-2">Týmy</h3><div class="overflow-x-auto"><table class="w-full text-left text-sm"><thead><tr class="border-b"><th class="p-2">Poz.</th><th class="p-2">Tým</th><th class="p-2 text-center">V</th><th class="p-2 text-center">P</th><th class="p-2 text-center">Odehráno</th><th class="p-2 text-center">Skóre</th></tr></thead><tbody>${stats.map((s, i) => `<tr class="border-b last:border-none"><td class="p-2 font-bold">${i === 0 && s.wins > 0 ? '🥇' : `#${i+1}`}</td><td class="p-2">${s.label}</td><td class="p-2 text-center text-green-600 font-semibold">${s.wins}</td><td class="p-2 text-center text-red-500">${s.losses}</td><td class="p-2 text-center">${s.played}</td><td class="p-2 text-center">${s.scoreFor}:${s.scoreAgainst}</td></tr>`).join('')}</tbody></table></div></div>` : ''
+    leaderboardTable: (stats, t) => {
+        const getDisplayPos = (i) => {
+            if (i === 0) return 1;
+            const prev = stats[i - 1];
+            const curr = stats[i];
+            const same = prev.wins === curr.wins && (prev.scoreFor - prev.scoreAgainst) === (curr.scoreFor - curr.scoreAgainst) && prev.scoreFor === curr.scoreFor;
+            return same ? getDisplayPos(i - 1) : i + 1;
+        };
+        const isFirstPlace = (s, i) => s.wins > 0 && getDisplayPos(i) === 1;
+        return `<div class="overflow-x-auto"><table class="w-full text-left"><thead><tr class="border-b"><th class="p-2">Poz.</th><th class="p-2">Hráč</th><th class="p-2 text-center">Vítězství</th><th class="p-2 text-center">Porážky</th><th class="p-2 text-center">Odehráno</th><th class="p-2 text-center">Úspěšnost</th></tr></thead><tbody>${stats.map((s, i) => `<tr class="border-b last:border-none"><td class="p-2 font-bold">${isFirstPlace(s, i) ? '🏆' : `#${getDisplayPos(i)}`}</td><td class="p-2 flex items-center gap-2"><div class="w-4 h-4 rounded-full ${playerColors[t.playerIds.indexOf(s.player.id) % playerColors.length]}"></div> ${s.player.name}</td><td class="p-2 text-center font-bold text-green-600">${s.wins}</td><td class="p-2 text-center text-red-500">${s.losses}</td><td class="p-2 text-center">${s.played}</td><td class="p-2 text-center font-semibold">${s.played > 0 ? Math.round((s.wins / s.played) * 100) : 0}%</td></tr>`).join('')}</tbody></table></div>`;
+    },
+    teamLeaderboard: (stats) => {
+        if (!stats.length) return '';
+        const getDisplayPos = (i) => {
+            if (i === 0) return 1;
+            const prev = stats[i - 1], curr = stats[i];
+            const same = prev.wins === curr.wins && (prev.scoreFor - prev.scoreAgainst) === (curr.scoreFor - curr.scoreAgainst) && prev.scoreFor === curr.scoreFor;
+            return same ? getDisplayPos(i - 1) : i + 1;
+        };
+        const isFirst = (s, i) => s.wins > 0 && getDisplayPos(i) === 1;
+        return `<div class="mt-4"><h3 class="text-lg font-semibold mb-2">Týmy</h3><div class="overflow-x-auto"><table class="w-full text-left text-sm"><thead><tr class="border-b"><th class="p-2">Poz.</th><th class="p-2">Tým</th><th class="p-2 text-center">V</th><th class="p-2 text-center">P</th><th class="p-2 text-center">Odehráno</th><th class="p-2 text-center">Skóre</th></tr></thead><tbody>${stats.map((s, i) => `<tr class="border-b last:border-none"><td class="p-2 font-bold">${isFirst(s, i) ? '🥇' : `#${getDisplayPos(i)}`}</td><td class="p-2">${s.label}</td><td class="p-2 text-center text-green-600 font-semibold">${s.wins}</td><td class="p-2 text-center text-red-500">${s.losses}</td><td class="p-2 text-center">${s.played}</td><td class="p-2 text-center">${s.scoreFor}:${s.scoreAgainst}</td></tr>`).join('')}</tbody></table></div></div>`;
+    }
 };
 
 export function renderStatsScreen() {
@@ -407,7 +439,7 @@ export function renderGameBoard() {
         const winnerScore = Math.max(m.score1, m.score2);
         const loserScore = Math.min(m.score1, m.score2);
         const randomPhrase = winningPhrases[Math.floor(Math.random() * winningPhrases.length)];
-        speak(`Konec zápasu. Vítěz je ${winnerLabel} s výsledkem ${winnerScore} : ${loserScore}, ${randomPhrase}`);
+        speak(`Konec zápasu. Vítěz je ${winnerLabel} s výsledkem ${winnerScore} : ${loserScore}. ${randomPhrase}`);
     }
 }
 

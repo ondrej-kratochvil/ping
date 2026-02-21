@@ -118,10 +118,27 @@ export function calculateOverallStats() {
         const isFinished = t.matches.length > 0 && completedMatches.length === t.matches.length;
         if (isFinished) {
             const ranking = calculateStats(t);
-            ranking.slice(0, 3).forEach((stat, i) => {
-                const s = overallStats.get(stat.player.id);
-                if(s) s.places[i+1]++;
-            });
+            const getPlaceGroup = (startIdx) => {
+                if (startIdx >= ranking.length) return [];
+                const first = ranking[startIdx];
+                const group = [first];
+                for (let j = startIdx + 1; j < ranking.length; j++) {
+                    const s = ranking[j];
+                    if (s.wins === first.wins && (s.scoreFor - s.scoreAgainst) === (first.scoreFor - first.scoreAgainst) && s.scoreFor === first.scoreFor) {
+                        group.push(s);
+                    } else break;
+                }
+                return group;
+            };
+            let idx = 0;
+            for (let place = 1; place <= 3 && idx < ranking.length; place++) {
+                const group = getPlaceGroup(idx);
+                group.forEach(stat => {
+                    const s = overallStats.get(stat.player.id);
+                    if (s) s.places[place]++;
+                });
+                idx += group.length;
+            }
         }
     });
     return Array.from(overallStats.values()).sort((a, b) => b.wins - a.wins || (b.scoreFor - b.scoreAgainst) - (a.scoreFor - a.scoreAgainst));
