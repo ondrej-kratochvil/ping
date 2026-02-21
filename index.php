@@ -1,6 +1,7 @@
 <?php
 // Zákaz cachování
 header("Content-Type: text/html; charset=utf-8");
+$routerBase = (strpos($_SERVER['REQUEST_URI'] ?? '', '/a/ping') === 0) ? '/a/ping/' : '/';
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Cache-Control: post-check=0, pre-check=0", false);
 header("Pragma: no-cache");
@@ -11,6 +12,7 @@ header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="<?= htmlspecialchars($routerBase) ?>">
     <title>🏓 Ping pong turnaje</title>
     
     <script type="importmap">
@@ -28,6 +30,7 @@ header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
             "./js/stats.js": "./js/stats.js?v=1.1.3",
             "./js/ui.js": "./js/ui.js?v=1.1.3",
             "./js/utils.js": "./js/utils.js?v=1.1.3",
+            "./js/router.js": "./js/router.js?v=1.1.3",
             "./js/voice-input.js": "./js/voice-input.js?v=1.1.3",
             "./js/utils/tournament-utils.js": "./js/utils/tournament-utils.js?v=1.1.3"
         }
