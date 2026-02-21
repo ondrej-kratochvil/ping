@@ -230,34 +230,109 @@ function regenerateMatches($conn, $tournamentId, $playerIds, $type) {
         if (count($teams) < 2) {
             return;
         }
-        $matchStmt = $conn->prepare("INSERT INTO matches (entity_id, tournament_id, player1_id, player2_id, team1_id, team2_id, match_order, score1, score2) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0)");
+        $teamPairs = [];
         for ($i = 0; $i < count($teams); $i++) {
             for ($j = $i + 1; $j < count($teams); $j++) {
-                $teamA = $teams[$i];
-                $teamB = $teams[$j];
-                $playerA = $teamA['player_ids'][0];
-                $playerB = $teamB['player_ids'][0];
-                $matchStmt->bind_param("iiiiiii", $nextMatchEntityId, $tournamentId, $playerA, $playerB, $teamA['entity_id'], $teamB['entity_id'], $order);
-                $matchStmt->execute();
-                $nextMatchEntityId++;
-                $order++;
+                $teamPairs[] = [$teams[$i], $teams[$j]];
             }
+        }
+        $orderedTeamPairs = orderMatchesForTeamRotation($teamPairs);
+        $matchStmt = $conn->prepare("INSERT INTO matches (entity_id, tournament_id, player1_id, player2_id, team1_id, team2_id, match_order, score1, score2) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0)");
+        foreach ($orderedTeamPairs as $pair) {
+            $teamA = $pair[0];
+            $teamB = $pair[1];
+            $playerA = $teamA['player_ids'][0];
+            $playerB = $teamB['player_ids'][0];
+            $matchStmt->bind_param("iiiiiii", $nextMatchEntityId, $tournamentId, $playerA, $playerB, $teamA['entity_id'], $teamB['entity_id'], $order);
+            $matchStmt->execute();
+            $nextMatchEntityId++;
+            $order++;
         }
     } else {
         invalidateTournamentTeams($conn, $tournamentId);
-        $matchStmt = $conn->prepare("INSERT INTO matches (entity_id, tournament_id, player1_id, player2_id, match_order, score1, score2) VALUES (?, ?, ?, ?, ?, 0, 0)");
         $playerCount = count($playerIds);
+        $pairs = [];
         for ($i = 0; $i < $playerCount; $i++) {
             for ($j = $i + 1; $j < $playerCount; $j++) {
-                $p1 = intval($playerIds[$i]);
-                $p2 = intval($playerIds[$j]);
-                $matchStmt->bind_param("iiiii", $nextMatchEntityId, $tournamentId, $p1, $p2, $order);
-                $matchStmt->execute();
-                $nextMatchEntityId++;
-                $order++;
+                $pairs[] = [intval($playerIds[$i]), intval($playerIds[$j])];
             }
         }
+        $orderedPairs = orderMatchesForPlayerRotation($pairs);
+        $matchStmt = $conn->prepare("INSERT INTO matches (entity_id, tournament_id, player1_id, player2_id, match_order, score1, score2) VALUES (?, ?, ?, ?, ?, 0, 0)");
+        foreach ($orderedPairs as $pair) {
+            $p1 = $pair[0];
+            $p2 = $pair[1];
+            $matchStmt->bind_param("iiiii", $nextMatchEntityId, $tournamentId, $p1, $p2, $order);
+            $matchStmt->execute();
+            $nextMatchEntityId++;
+            $order++;
+        }
     }
+}
+
+/**
+ * Seřadí zápasy tak, aby žádný hráč nehrál dva zápasy po sobě (pokud to jde).
+ * Greedy: v každém kroku vybere zápas s hráčem, který byl nejdéle bez zápasu.
+ * @param array $pairs [[player1, player2], ...]
+ * @return array Seřazené dvojice
+ */
+function orderMatchesForPlayerRotation($pairs) {
+    $remaining = array_values($pairs);
+    $ordered = [];
+    $lastPlayedAt = [];
+    $big = 9999;
+
+    while (!empty($remaining)) {
+        $bestIdx = null;
+        $bestScore = -1;
+        $k = count($ordered);
+
+        foreach ($remaining as $idx => $pair) {
+            $p1 = $pair[0];
+            $p2 = $pair[1];
+            $lp1 = $lastPlayedAt[$p1] ?? -1;
+            $lp2 = $lastPlayedAt[$p2] ?? -1;
+            $idle1 = ($lp1 === -1) ? $big : ($k - 1 - $lp1);
+            $idle2 = ($lp2 === -1) ? $big : ($k - 1 - $lp2);
+            $score = min($idle1, $idle2);
+            if ($bestIdx === null || $score > $bestScore) {
+                $bestScore = $score;
+                $bestIdx = $idx;
+            }
+        }
+
+        $match = $remaining[$bestIdx];
+        array_splice($remaining, $bestIdx, 1);
+        $ordered[] = $match;
+        $pos = count($ordered) - 1;
+        $lastPlayedAt[$match[0]] = $pos;
+        $lastPlayedAt[$match[1]] = $pos;
+    }
+
+    return $ordered;
+}
+
+/**
+ * Seřadí zápasy čtyřher tak, aby žádný tým nehrál dva zápasy po sobě (pokud to jde).
+ * @param array $teamPairs [[teamA, teamB], ...] kde team = ['entity_id'=>..., 'player_ids'=>...]
+ * @return array Seřazené dvojice týmů
+ */
+function orderMatchesForTeamRotation($teamPairs) {
+    $pairs = [];
+    $pairByKey = [];
+    foreach ($teamPairs as $pair) {
+        $id1 = $pair[0]['entity_id'];
+        $id2 = $pair[1]['entity_id'];
+        $pairs[] = [$id1, $id2];
+        $pairByKey[$id1 . '_' . $id2] = $pair;
+    }
+    $orderedIds = orderMatchesForPlayerRotation($pairs);
+    $result = [];
+    foreach ($orderedIds as $ids) {
+        $key = $ids[0] . '_' . $ids[1];
+        $result[] = $pairByKey[$key];
+    }
+    return $result;
 }
 
 // --- AKCE ---
