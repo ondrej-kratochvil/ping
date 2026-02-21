@@ -8,6 +8,16 @@ export function initializeAudio() {
     if (!audioContext) {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
     }
+    const resumeAudio = () => {
+        if (audioContext && audioContext.state === 'suspended') {
+            audioContext.resume();
+        }
+    };
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') resumeAudio();
+    });
+    window.addEventListener('pageshow', resumeAudio);
+    window.addEventListener('focus', resumeAudio);
 }
 
 export function playSound(playerIndex) {
@@ -25,11 +35,13 @@ export function playSound(playerIndex) {
 
 export function speak(text, force = false, onEnd = null) {
     if ((!state.settings.voiceAssistEnabled && !force) || !synth) return;
-    // Zrušíme předchozí výstup, pokud nějaký je, aby se zprávy nekumulovaly
+    if (audioContext && audioContext.state === 'suspended') {
+        audioContext.resume();
+    }
     synth.cancel();
-    let utterance = new SpeechSynthesisUtterance(text); // Vytvoříme novou instanci pro každou hlášku
+    let utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'cs-CZ';
-    utterance.volume = state.settings.voiceVolume !== undefined ? state.settings.voiceVolume : 1;
+    utterance.volume = 1;
     if (onEnd && typeof onEnd === 'function') { utterance.onend = () => onEnd(); }
     synth.speak(utterance);
 }
