@@ -131,11 +131,13 @@ export function calculateOverallStats() {
                 return group;
             };
             let idx = 0;
-            for (let place = 1; place <= 3 && idx < ranking.length; place++) {
+            while (idx < ranking.length) {
                 const group = getPlaceGroup(idx);
+                const displayPlace = idx + 1; // standard competition ranking (1, 1, 3, 4...)
+                if (displayPlace > 3) break;
                 group.forEach(stat => {
                     const s = overallStats.get(stat.player.id);
-                    if (s) s.places[place]++;
+                    if (s) s.places[displayPlace]++;
                 });
                 idx += group.length;
             }
