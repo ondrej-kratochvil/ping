@@ -1,16 +1,111 @@
-﻿// Vstupní bod aplikace – inicializace a obsluha událostí
+// Vstupní bod aplikace – inicializace a obsluha událostí
 
 import { initUI, getModalsContainer, getScreens, closeModal, showConfirmModal, showAlertModal } from './ui.js';
 import { loadState, apiCall } from './api.js';
-import { renderMainScreen } from './render.js';
+import {
+    renderMainScreen, renderTournamentScreen, renderPlayerDbScreen, renderStatsScreen,
+    renderOverallStatsScreen, renderGameBoard, renderStartMatchModal
+} from './render.js';
 import { allActions, updateScore, undoLastPoint } from './actions.js';
 import { state } from './state.js';
 import { getTournament, getMatch } from './utils.js';
 import { checkWinCondition } from './game-logic.js';
 import { initializeAudio, speak } from './audio.js';
 import { voiceInput } from './voice-input.js';
+import { initRouter, parseRoute, getPath, navigateTo } from './router.js';
 // APP_VERSION definujeme zde, abychom se vyhnuli problémům s cachováním constants.js
 const APP_VERSION = '1.1.3';
+
+async function applyRoute(route) {
+    closeModal();
+    switch (route.name) {
+        case 'main':
+            renderMainScreen();
+            break;
+        case 'tournament-new':
+            renderMainScreen();
+            allActions['_show-new-tournament-modal-inner']();
+            break;
+        case 'tournament':
+        case 'tournament-settings':
+        case 'tournament-stats': {
+            const t = getTournament(route.tournamentId);
+            if (!t) {
+                renderMainScreen();
+                await showAlertModal('Turnaj nebyl nalezen.', 'Chyba');
+                return;
+            }
+            state.activeTournamentId = route.tournamentId;
+            renderTournamentScreen();
+            if (route.name === 'tournament-settings') {
+                allActions['_show-settings-modal-inner']();
+            } else if (route.name === 'tournament-stats') {
+                renderStatsScreen();
+            }
+            break;
+        }
+        case 'match': {
+            const t = getTournament(route.tournamentId);
+            if (!t) {
+                renderMainScreen();
+                await showAlertModal('Turnaj nebyl nalezen.', 'Chyba');
+                return;
+            }
+            const m = getMatch(t, route.matchId);
+            if (!m) {
+                state.activeTournamentId = route.tournamentId;
+                renderTournamentScreen();
+                await showAlertModal('Zápas nebyl nalezen.', 'Chyba');
+                return;
+            }
+            state.activeTournamentId = route.tournamentId;
+            state.activeMatchId = String(route.matchId);
+            state.scoreHistory = [];
+            state.lastPointTimestamp = null;
+            const match = getMatch(t, route.matchId);
+            match.score1 = match.score1 || 0;
+            match.score2 = match.score2 || 0;
+            if (!match.firstServer) {
+                renderTournamentScreen();
+                renderStartMatchModal(match);
+                if (state.settings.voiceInputEnabled) {
+                    voiceInput.setContext('setup');
+                    voiceInput.start();
+                }
+            } else {
+                renderGameBoard();
+                if (state.settings.voiceInputEnabled) {
+                    voiceInput.setContext('game');
+                    voiceInput.start();
+                }
+            }
+            break;
+        }
+        case 'players':
+            renderPlayerDbScreen();
+            break;
+        case 'player-new':
+            renderPlayerDbScreen();
+            allActions['open-edit-player-modal'](null);
+            break;
+        case 'player-edit': {
+            const p = state.playerDatabase.find(pl => pl.id === route.playerId);
+            if (!p) {
+                renderPlayerDbScreen();
+                await showAlertModal('Hráč nebyl nalezen.', 'Chyba');
+                return;
+            }
+            renderPlayerDbScreen();
+            allActions['open-edit-player-modal'](route.playerId);
+            break;
+        }
+        case 'stats-overall':
+            renderOverallStatsScreen();
+            break;
+        default:
+            renderMainScreen();
+    }
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     initUI();
@@ -65,7 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (showLockedToggle) {
             state.settings.showLockedTournaments = showLockedToggle.checked;
             apiCall('saveSettings', { key: 'showLockedTournaments', value: state.settings.showLockedTournaments });
-            renderMainScreen();
+            navigateTo({ name: 'main' });
         }
         const motivationalPhrasesToggle = e.target.closest('[data-action="toggle-motivational-phrases"]');
         if (motivationalPhrasesToggle) {
@@ -113,7 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && modalsContainer.children.length > 0) {
-            closeModal();
+            allActions['close-modal']();
             return;
         }
 
@@ -212,6 +307,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     (async () => {
         await loadState();
-        renderMainScreen();
+        initRouter(applyRoute);
+        const route = parseRoute(getPath());
+        await applyRoute(route);
     })();
 });
