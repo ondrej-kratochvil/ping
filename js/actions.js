@@ -245,7 +245,8 @@ export const allActions = {
                 weaknesses: document.getElementById('player-weaknesses').value.trim(),
             }
         };
-        await apiCall('savePlayer', payload);
+        const result = await apiCall('savePlayer', payload);
+        if (!result?.ok) return;
         closeModal();
         navigateTo({ name: 'players' });
     },
@@ -254,7 +255,8 @@ export const allActions = {
         const isPlayerInTournament = state.tournaments.some(t => t.playerIds.includes(playerId));
         if (isPlayerInTournament) { await showAlertModal('Hráče nelze smazat, protože je součástí jednoho nebo více turnajů.', 'Chyba'); return; }
         if (await showConfirmModal('Opravdu chcete smazat tohoto hráče z databáze?', 'Smazat hráče')) {
-            await apiCall('deletePlayer', { id: playerId });
+            const result = await apiCall('deletePlayer', { id: playerId });
+            if (!result?.ok) return;
             navigateTo({ name: 'players' });
         }
     },
@@ -297,7 +299,8 @@ export const allActions = {
             playerIds: tempPlayerIds,
             type: tempTournamentType
         };
-        await apiCall('createTournament', payload);
+        const result = await apiCall('createTournament', payload);
+        if (!result?.ok) return;
         closeModal();
         navigateTo({ name: 'main' });
         showToast('Turnaj byl úspěšně vytvořen', 'success');
@@ -340,7 +343,8 @@ export const allActions = {
             });
         }
         const payload = { id: t.id, data: t };
-        await apiCall('updateTournament', payload);
+        const result = await apiCall('updateTournament', payload);
+        if (!result?.ok) return;
         closeModal();
         navigateTo({ name: 'tournament', tournamentId: t.id });
         showToast('Nastavení turnaje bylo uloženo', 'success');
@@ -405,10 +409,12 @@ export const allActions = {
         let newTournament = null;
         try {
             const apiResponse = await apiCall('createTournament', payload);
-            if (apiResponse && apiResponse.tournaments) {
-                newTournament = apiResponse.tournaments.find(tour => tour.name === newName);
-                if (!newTournament && apiResponse.tournaments.length > 0) {
-                    const sortedTournaments = [...apiResponse.tournaments].sort((a, b) => parseInt(b.id) - parseInt(a.id));
+            if (!apiResponse?.ok) return;
+            const data = apiResponse.data;
+            if (data?.tournaments) {
+                newTournament = data.tournaments.find(tour => tour.name === newName);
+                if (!newTournament && data.tournaments.length > 0) {
+                    const sortedTournaments = [...data.tournaments].sort((a, b) => parseInt(b.id) - parseInt(a.id));
                     const newestTournament = sortedTournaments[0];
                     if (newestTournament.id != currentTournament.id) {
                         newTournament = newestTournament;
@@ -481,9 +487,14 @@ export const allActions = {
         closeModal();
         navigateTo({ name: 'main' });
     },
-    'delete-tournament-settings': async () => { const t = getTournament(); if(await showConfirmModal(`Opravdu chcete trvale smazat turnaj "${t.name}"?`, 'Smazat turnaj')){ closeModal();
-            await apiCall('deleteTournament', { id: t.id });
-            navigateTo({ name: 'main' }); } },
+    'delete-tournament-settings': async () => {
+        const t = getTournament();
+        if (!(await showConfirmModal(`Opravdu chcete trvale smazat turnaj "${t.name}"?`, 'Smazat turnaj'))) return;
+        const result = await apiCall('deleteTournament', { id: t.id });
+        if (!result?.ok) return;
+        closeModal();
+        navigateTo({ name: 'main' });
+    },
     'toggle-lock-main': (target) => {
         const tournamentId = parseInt(target.dataset.id);
         const t = getTournament(tournamentId);
@@ -500,11 +511,11 @@ export const allActions = {
         navigateTo({ name: 'main' });
     },
     'delete-tournament': async (target) => {
-        if (await showConfirmModal('Opravdu smazat?', 'Smazat turnaj')) {
-            const tournamentId = parseInt(target.dataset.id);
-            await apiCall('deleteTournament', { id: tournamentId });
-            navigateTo({ name: 'main' });
-        }
+        if (!(await showConfirmModal('Opravdu smazat?', 'Smazat turnaj'))) return;
+        const tournamentId = parseInt(target.dataset.id);
+        const result = await apiCall('deleteTournament', { id: tournamentId });
+        if (!result?.ok) return;
+        navigateTo({ name: 'main' });
     },
     'back-to-main': () => navigateTo({ name: 'main' }),
     'back-to-tournament':()=>{
@@ -628,10 +639,13 @@ export const allActions = {
             await showAlertModal("Došlo k chybě, zápas nebyl nalezen.", 'Chyba');
             return;
         }
+        const oldScore1 = m.score1;
+        const oldScore2 = m.score2;
         m.score1 = parseInt(document.getElementById('edit-score1').value) || 0;
         m.score2 = parseInt(document.getElementById('edit-score2').value) || 0;
         const matchPayload = { ...m, tournament_id: t.id, match_order: t.matches.findIndex(match => match.id == m.id) };
-        await apiCall('updateMatch', { id: m.id, data: matchPayload });
+        const result = await apiCall('updateMatch', { id: m.id, data: matchPayload });
+        if (!result?.ok) { m.score1 = oldScore1; m.score2 = oldScore2; return; }
         closeModal();
         navigateTo({ name: 'tournament', tournamentId: t.id });
     },
@@ -691,7 +705,29 @@ export const allActions = {
         apiCall('saveSettings', { key: 'motivationalPhrasesEnabled', value: state.settings.motivationalPhrasesEnabled });
         renderGameBoard();
     },
-    'quick-edit-name': (target) => { const textEl = document.getElementById('tournament-name-text'); const oldName = textEl.textContent; const input = document.createElement('input'); input.type = 'text'; input.value = oldName; input.className = 'text-3xl font-bold bg-white border rounded w-full'; textEl.parentElement.replaceChild(input, textEl); input.focus(); const save = async () => { const newName = input.value.trim(); const t = getTournament(); if(newName) { t.name = newName; } await apiCall('updateTournament', { id: t.id, data: t }); navigateTo({ name: 'tournament', tournamentId: t.id }); }; input.addEventListener('blur', save); input.addEventListener('keydown', (e) => { if(e.key === 'Enter') save(); if(e.key === 'Escape') { input.value = oldName; save(); } }); },
+    'quick-edit-name': (target) => {
+        const textEl = document.getElementById('tournament-name-text');
+        const oldName = textEl.textContent;
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = oldName;
+        input.className = 'text-3xl font-bold bg-white border rounded w-full';
+        textEl.parentElement.replaceChild(input, textEl);
+        input.focus();
+        const save = async () => {
+            const newName = input.value.trim();
+            const t = getTournament();
+            if (newName) t.name = newName;
+            const result = await apiCall('updateTournament', { id: t.id, data: t });
+            if (!result?.ok) { t.name = oldName; }
+            navigateTo({ name: 'tournament', tournamentId: t.id });
+        };
+        input.addEventListener('blur', save);
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') save();
+            if (e.key === 'Escape') { input.value = oldName; save(); }
+        });
+    },
     'move-match': async (target) => {
         const t = getTournament();
         const { id, dir } = target.dataset;
@@ -706,7 +742,11 @@ export const allActions = {
         const otherOriginalIndex = t.matches.findIndex(m => m.id == otherMatchId);
         [t.matches[originalIndex], t.matches[otherOriginalIndex]] = [t.matches[otherOriginalIndex], t.matches[originalIndex]];
         const upcomingMatchIds = t.matches.filter(m => !m.completed).map(m => m.id);
-        await apiCall('reorderMatches', { matchIds: upcomingMatchIds });
+        const result = await apiCall('reorderMatches', { matchIds: upcomingMatchIds });
+        if (!result?.ok) {
+            [t.matches[originalIndex], t.matches[otherOriginalIndex]] = [t.matches[otherOriginalIndex], t.matches[originalIndex]];
+            return;
+        }
         navigateTo({ name: 'tournament', tournamentId: t.id });
     },
     'swap-sides': async (target) => {
@@ -716,7 +756,8 @@ export const allActions = {
         if (m && !t.isLocked) {
             const entityId = m.id;
             m.sidesSwapped = !m.sidesSwapped;
-            await apiCall('swapSides', { matchId: entityId });
+            const result = await apiCall('swapSides', { matchId: entityId });
+            if (!result?.ok) { m.sidesSwapped = !m.sidesSwapped; return; }
             const updatedT = getTournament();
             const updatedM = getMatch(updatedT, entityId);
             if (!updatedM) {
