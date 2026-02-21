@@ -17,7 +17,7 @@ export async function apiCall(action, payload) {
         } else {
             const freshData = await response.json();
             if (freshData.tournaments) { // Aktualizujeme stav jen pokud přišel celý datový objekt
-                updateStateWithApiData(freshData);
+                updateStateWithApiData(freshData, { skipSettings: true });
             }
         }
     } catch (error) {
