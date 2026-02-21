@@ -213,7 +213,13 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             if (modalsContainer.children.length > 0) {
-                allActions['close-modal']();
+                const top = modalsContainer.lastElementChild;
+                const tid = top?.getAttribute?.('data-test-id');
+                if (tid === 'alert-modal' || tid === 'confirm-modal') {
+                    closeModal();
+                } else {
+                    allActions['close-modal']();
+                }
                 return;
             }
             const route = parseRoute(getPath());
