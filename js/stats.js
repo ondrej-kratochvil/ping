@@ -124,7 +124,7 @@ export function calculateOverallStats() {
                 const group = [first];
                 for (let j = startIdx + 1; j < ranking.length; j++) {
                     const s = ranking[j];
-                    if (s.wins === first.wins && (s.scoreFor - s.scoreAgainst) === (first.scoreFor - first.scoreAgainst) && s.scoreFor === first.scoreFor) {
+                    if (s.wins === first.wins && (s.scoreFor - s.scoreAgainst) === (first.scoreFor - first.scoreAgainst)) {
                         group.push(s);
                     } else break;
                 }

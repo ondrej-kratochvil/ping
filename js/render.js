@@ -65,7 +65,7 @@ export function renderMainScreen() {
             if (isFinished) { 
                 const stats = calculateStats(t); 
                 const firstPlace = stats.length > 0 && stats[0].wins > 0
-                    ? stats.filter(s => s.wins === stats[0].wins && (s.scoreFor - s.scoreAgainst) === (stats[0].scoreFor - stats[0].scoreAgainst) && s.scoreFor === stats[0].scoreFor)
+                    ? stats.filter(s => s.wins === stats[0].wins && (s.scoreFor - s.scoreAgainst) === (stats[0].scoreFor - stats[0].scoreAgainst))
                     : [];
                 winnerInfo = firstPlace.length > 0
                     ? firstPlace.map(s => `<p class="font-bold text-yellow-500"><i class="fa-solid fa-trophy"></i> ${s.player.name}</p>`).join('')
@@ -177,7 +177,7 @@ export function renderTournamentScreen() {
     if(isFinished) {
         const stats = calculateStats(t);
         const firstPlace = stats.length > 0 && stats[0].wins > 0
-            ? stats.filter(s => s.wins === stats[0].wins && (s.scoreFor - s.scoreAgainst) === (stats[0].scoreFor - stats[0].scoreAgainst) && s.scoreFor === stats[0].scoreFor)
+            ? stats.filter(s => s.wins === stats[0].wins && (s.scoreFor - s.scoreAgainst) === (stats[0].scoreFor - stats[0].scoreAgainst))
             : [];
         const rest = stats.slice(firstPlace.length);
         const trophyIcons = ['', '🥈', '🥉'];
@@ -204,7 +204,7 @@ export const templates = {
             if (i === 0) return 1;
             const prev = stats[i - 1];
             const curr = stats[i];
-            const same = prev.wins === curr.wins && (prev.scoreFor - prev.scoreAgainst) === (curr.scoreFor - curr.scoreAgainst) && prev.scoreFor === curr.scoreFor;
+            const same = prev.wins === curr.wins && (prev.scoreFor - prev.scoreAgainst) === (curr.scoreFor - curr.scoreAgainst);
             return same ? getDisplayPos(i - 1) : i + 1;
         };
         const isFirstPlace = (s, i) => s.wins > 0 && getDisplayPos(i) === 1;
@@ -215,7 +215,7 @@ export const templates = {
         const getDisplayPos = (i) => {
             if (i === 0) return 1;
             const prev = stats[i - 1], curr = stats[i];
-            const same = prev.wins === curr.wins && (prev.scoreFor - prev.scoreAgainst) === (curr.scoreFor - curr.scoreAgainst) && prev.scoreFor === curr.scoreFor;
+            const same = prev.wins === curr.wins && (prev.scoreFor - prev.scoreAgainst) === (curr.scoreFor - curr.scoreAgainst);
             return same ? getDisplayPos(i - 1) : i + 1;
         };
         const isFirst = (s, i) => s.wins > 0 && getDisplayPos(i) === 1;
