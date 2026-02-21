@@ -2,6 +2,18 @@
 import { state } from './state.js';
 import { getGlobalPlayer, getSidePlayerIds, formatPlayersLabel, getTeamKey, isDoubleTournament } from './utils.js';
 
+/** Sdílené kritérium remízy pro pořadí (wins + skóre rozdíl). */
+export function isTied(prev, curr) {
+    return prev.wins === curr.wins && (prev.scoreFor - prev.scoreAgainst) === (curr.scoreFor - curr.scoreAgainst);
+}
+
+/** Standard competition ranking: pozice 1, 1, 3, 4... pro seřazené stats. */
+export function getDisplayPos(stats, i) {
+    if (i === 0) return 1;
+    const prev = stats[i - 1], curr = stats[i];
+    return isTied(prev, curr) ? getDisplayPos(stats, i - 1) : i + 1;
+}
+
 export function calculateStats(t) {
     const statsMap = new Map();
     t.playerIds.forEach(id => {
@@ -124,9 +136,8 @@ export function calculateOverallStats() {
                 const group = [first];
                 for (let j = startIdx + 1; j < ranking.length; j++) {
                     const s = ranking[j];
-                    if (s.wins === first.wins && (s.scoreFor - s.scoreAgainst) === (first.scoreFor - first.scoreAgainst)) {
-                        group.push(s);
-                    } else break;
+                    if (isTied(s, first)) group.push(s);
+                    else break;
                 }
                 return group;
             };

@@ -8,7 +8,7 @@ import {
     getCzechPlayerDeclension, getMatchResultForPlayers
 } from './utils.js';
 import { playerColors, winningPhrases } from './constants.js';
-import { calculateStats, calculateTeamStats, calculateOverallStats, calculateOverallTeamStats } from './stats.js';
+import { calculateStats, calculateTeamStats, calculateOverallStats, calculateOverallTeamStats, getDisplayPos } from './stats.js';
 import { checkWinCondition } from './game-logic.js';
 import { speak } from './audio.js';
 import { showAlertModal } from './ui.js';
@@ -180,12 +180,6 @@ export function renderTournamentScreen() {
             ? stats.filter(s => s.wins === stats[0].wins && (s.scoreFor - s.scoreAgainst) === (stats[0].scoreFor - stats[0].scoreAgainst))
             : [];
         const rest = stats.slice(firstPlace.length);
-        const getDisplayPos = (statsArr, i) => {
-            if (i === 0) return 1;
-            const prev = statsArr[i - 1], curr = statsArr[i];
-            const same = prev.wins === curr.wins && (prev.scoreFor - prev.scoreAgainst) === (curr.scoreFor - curr.scoreAgainst);
-            return same ? getDisplayPos(statsArr, i - 1) : i + 1;
-        };
         const trophyByPlace = { 1: '🏆', 2: '🥈', 3: '🥉' };
         const firstPlaceHtml = firstPlace.length > 0
             ? `<p class="text-gray-600">Celkovým vítězem${firstPlace.length > 1 ? ' jsou' : ' je'}</p>${firstPlace.map(s => `<p class="text-3xl font-bold my-2">🏆 ${s.player.name}</p>`).join('')}`
@@ -211,26 +205,13 @@ export function renderTournamentScreen() {
 
 export const templates = {
     leaderboardTable: (stats, t) => {
-        const getDisplayPos = (i) => {
-            if (i === 0) return 1;
-            const prev = stats[i - 1];
-            const curr = stats[i];
-            const same = prev.wins === curr.wins && (prev.scoreFor - prev.scoreAgainst) === (curr.scoreFor - curr.scoreAgainst);
-            return same ? getDisplayPos(i - 1) : i + 1;
-        };
-        const isFirstPlace = (s, i) => s.wins > 0 && getDisplayPos(i) === 1;
-        return `<div class="overflow-x-auto"><table class="w-full text-left"><thead><tr class="border-b"><th class="p-2">Poz.</th><th class="p-2">Hráč</th><th class="p-2 text-center">Vítězství</th><th class="p-2 text-center">Porážky</th><th class="p-2 text-center">Odehráno</th><th class="p-2 text-center">Úspěšnost</th></tr></thead><tbody>${stats.map((s, i) => `<tr class="border-b last:border-none"><td class="p-2 font-bold">${isFirstPlace(s, i) ? '🏆' : `#${getDisplayPos(i)}`}</td><td class="p-2 flex items-center gap-2"><div class="w-4 h-4 rounded-full ${playerColors[t.playerIds.indexOf(s.player.id) % playerColors.length]}"></div> ${s.player.name}</td><td class="p-2 text-center font-bold text-green-600">${s.wins}</td><td class="p-2 text-center text-red-500">${s.losses}</td><td class="p-2 text-center">${s.played}</td><td class="p-2 text-center font-semibold">${s.played > 0 ? Math.round((s.wins / s.played) * 100) : 0}%</td></tr>`).join('')}</tbody></table></div>`;
+        const isFirstPlace = (s, i) => s.wins > 0 && getDisplayPos(stats, i) === 1;
+        return `<div class="overflow-x-auto"><table class="w-full text-left"><thead><tr class="border-b"><th class="p-2">Poz.</th><th class="p-2">Hráč</th><th class="p-2 text-center">Vítězství</th><th class="p-2 text-center">Porážky</th><th class="p-2 text-center">Odehráno</th><th class="p-2 text-center">Úspěšnost</th></tr></thead><tbody>${stats.map((s, i) => `<tr class="border-b last:border-none"><td class="p-2 font-bold">${isFirstPlace(s, i) ? '🏆' : `#${getDisplayPos(stats, i)}`}</td><td class="p-2 flex items-center gap-2"><div class="w-4 h-4 rounded-full ${playerColors[t.playerIds.indexOf(s.player.id) % playerColors.length]}"></div> ${s.player.name}</td><td class="p-2 text-center font-bold text-green-600">${s.wins}</td><td class="p-2 text-center text-red-500">${s.losses}</td><td class="p-2 text-center">${s.played}</td><td class="p-2 text-center font-semibold">${s.played > 0 ? Math.round((s.wins / s.played) * 100) : 0}%</td></tr>`).join('')}</tbody></table></div>`;
     },
     teamLeaderboard: (stats) => {
         if (!stats.length) return '';
-        const getDisplayPos = (i) => {
-            if (i === 0) return 1;
-            const prev = stats[i - 1], curr = stats[i];
-            const same = prev.wins === curr.wins && (prev.scoreFor - prev.scoreAgainst) === (curr.scoreFor - curr.scoreAgainst);
-            return same ? getDisplayPos(i - 1) : i + 1;
-        };
-        const isFirst = (s, i) => s.wins > 0 && getDisplayPos(i) === 1;
-        return `<div class="mt-4"><h3 class="text-lg font-semibold mb-2">Týmy</h3><div class="overflow-x-auto"><table class="w-full text-left text-sm"><thead><tr class="border-b"><th class="p-2">Poz.</th><th class="p-2">Tým</th><th class="p-2 text-center">V</th><th class="p-2 text-center">P</th><th class="p-2 text-center">Odehráno</th><th class="p-2 text-center">Skóre</th></tr></thead><tbody>${stats.map((s, i) => `<tr class="border-b last:border-none"><td class="p-2 font-bold">${isFirst(s, i) ? '🥇' : `#${getDisplayPos(i)}`}</td><td class="p-2">${s.label}</td><td class="p-2 text-center text-green-600 font-semibold">${s.wins}</td><td class="p-2 text-center text-red-500">${s.losses}</td><td class="p-2 text-center">${s.played}</td><td class="p-2 text-center">${s.scoreFor}:${s.scoreAgainst}</td></tr>`).join('')}</tbody></table></div></div>`;
+        const isFirst = (s, i) => s.wins > 0 && getDisplayPos(stats, i) === 1;
+        return `<div class="mt-4"><h3 class="text-lg font-semibold mb-2">Týmy</h3><div class="overflow-x-auto"><table class="w-full text-left text-sm"><thead><tr class="border-b"><th class="p-2">Poz.</th><th class="p-2">Tým</th><th class="p-2 text-center">V</th><th class="p-2 text-center">P</th><th class="p-2 text-center">Odehráno</th><th class="p-2 text-center">Skóre</th></tr></thead><tbody>${stats.map((s, i) => `<tr class="border-b last:border-none"><td class="p-2 font-bold">${isFirst(s, i) ? '🥇' : `#${getDisplayPos(stats, i)}`}</td><td class="p-2">${s.label}</td><td class="p-2 text-center text-green-600 font-semibold">${s.wins}</td><td class="p-2 text-center text-red-500">${s.losses}</td><td class="p-2 text-center">${s.played}</td><td class="p-2 text-center">${s.scoreFor}:${s.scoreAgainst}</td></tr>`).join('')}</tbody></table></div></div>`;
     }
 };
 
