@@ -112,11 +112,12 @@ async function applyRoute(route) {
 
 document.addEventListener('DOMContentLoaded', () => {
     initUI();
-    
+    initRouter(applyRoute); // před listenery – navigateTo musí mít _applyRoute při prvním kliknutí
+
     // Znovu nastavíme verzi pro jistotu
     const versionEl = document.getElementById('app-version');
     if (versionEl) versionEl.textContent = APP_VERSION;
-    
+
     // Inicializace voice input s potřebnými akcemi
     voiceInput.init({
         updateScore,
@@ -317,7 +318,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     (async () => {
         await loadState();
-        initRouter(applyRoute);
         const route = parseRoute(getPath());
         await applyRoute(route);
     })();
