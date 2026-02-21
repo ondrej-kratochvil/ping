@@ -18,6 +18,9 @@ const APP_VERSION = '1.1.3';
 
 async function applyRoute(route) {
     closeModal();
+    if (route.name !== 'match' && voiceInput.isActive()) {
+        voiceInput.stop();
+    }
     switch (route.name) {
         case 'main':
             renderMainScreen();
