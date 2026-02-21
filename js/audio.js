@@ -3,11 +3,14 @@ import { state } from './state.js';
 
 let audioContext;
 let synth = window.speechSynthesis;
+let _listenersRegistered = false;
 
 export function initializeAudio() {
     if (!audioContext) {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
     }
+    if (_listenersRegistered) return;
+    _listenersRegistered = true;
     const resumeAudio = () => {
         if (audioContext && audioContext.state === 'suspended') {
             audioContext.resume();

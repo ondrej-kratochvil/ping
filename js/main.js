@@ -12,7 +12,7 @@ import { getTournament, getMatch } from './utils.js';
 import { checkWinCondition } from './game-logic.js';
 import { initializeAudio, speak } from './audio.js';
 import { voiceInput } from './voice-input.js';
-import { initRouter, parseRoute, getPath, navigateTo } from './router.js';
+import { initRouter, parseRoute, getPath, navigateTo, back } from './router.js';
 // APP_VERSION definujeme zde, abychom se vyhnuli problémům s cachováním constants.js
 const APP_VERSION = '1.1.3';
 
@@ -210,9 +210,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && modalsContainer.children.length > 0) {
-            allActions['close-modal']();
-            return;
+        if (e.key === 'Escape') {
+            if (modalsContainer.children.length > 0) {
+                allActions['close-modal']();
+                return;
+            }
+            const route = parseRoute(getPath());
+            if (route.name === 'tournament-stats' || route.name === 'stats-overall') {
+                back();
+                return;
+            }
         }
 
         const activeElement = document.activeElement;
