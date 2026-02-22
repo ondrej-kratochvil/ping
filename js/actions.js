@@ -473,10 +473,11 @@ export const allActions = {
                     sidesSwapped: true,
                     doubleRotationState: match.doubleRotationState || match.double_rotation_state || null
                 };
-                try {
-                    await apiCall('updateMatch', { id: matchEntityId, data: matchPayload });
-                } catch (err) {
-                    console.error('❌ [COPY] Chyba při úpravě zápasu:', matchEntityId, err);
+                const matchResult = await apiCall('updateMatch', { id: matchEntityId, data: matchPayload });
+                if (!matchResult?.ok) {
+                    console.error('❌ [COPY] Chyba při úpravě zápasu:', matchEntityId);
+                    await showAlertModal('Chyba při kopírování zápasů. Zkontrolujte připojení.', 'Chyba');
+                    return;
                 }
             }
             await loadState();
