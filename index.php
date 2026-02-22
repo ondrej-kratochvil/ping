@@ -1,7 +1,8 @@
 <?php
 // Zákaz cachování
 header("Content-Type: text/html; charset=utf-8");
-$routerBase = (strpos($_SERVER['REQUEST_URI'] ?? '', '/a/ping') === 0) ? '/a/ping/' : '/';
+$path = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?: '';
+$routerBase = ($path === '/a/ping' || strpos($path, '/a/ping/') === 0) ? '/a/ping/' : '/';
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Cache-Control: post-check=0, pre-check=0", false);
 header("Pragma: no-cache");

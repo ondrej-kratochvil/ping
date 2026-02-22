@@ -5,7 +5,8 @@
  * Localhost: /a/ping/, Produkce (root): /
  */
 export function getBase() {
-    return window.location.pathname.startsWith('/a/ping') ? '/a/ping/' : '/';
+    const path = window.location.pathname;
+    return (path === '/a/ping' || path.startsWith('/a/ping/')) ? '/a/ping/' : '/';
 }
 
 /** Pro path operace – base bez koncové lomítka (nebo '' pro root). */
