@@ -130,15 +130,13 @@ export const updateScore = async (playerId, delta, sideOverride = null) => {
             const servingPlayerScore = servingSide === 1 ? m.score1 : m.score2;
             const otherPlayerScore = servingSide === 1 ? m.score2 : m.score1;
 
-            if (m.completed) { // This state je nastaveno po checkWinCondition
-                const winnerSide = checkWinCondition(m, t.pointsToWin);
-                if (winnerSide) {
-                    const winnerLabel = formatPlayersLabel(winnerSide === 1 ? side1Players : side2Players);
-                    const winnerScore = Math.max(m.score1, m.score2);
-                    const loserScore = Math.min(m.score1, m.score2);
-                    const randomPhrase = winningPhrases[Math.floor(Math.random() * winningPhrases.length)];
-                    speak(`Konec zápasu. Vítěz je ${winnerLabel} s výsledkem ${winnerScore} : ${loserScore}. ${randomPhrase}`, true);
-                }
+            const winnerSide = checkWinCondition(m, t.pointsToWin);
+            if (winnerSide) {
+                const winnerLabel = formatPlayersLabel(winnerSide === 1 ? side1Players : side2Players);
+                const winnerScore = Math.max(m.score1, m.score2);
+                const loserScore = Math.min(m.score1, m.score2);
+                const randomPhrase = winningPhrases[Math.floor(Math.random() * winningPhrases.length)];
+                speak(`Konec zápasu. Vítěz je ${winnerLabel} s výsledkem ${winnerScore} : ${loserScore}. ${randomPhrase}`, true);
             } else if (servingLabel) {
                 let speechText = `${servingLabel}, ${servingPlayerScore} : ${otherPlayerScore}`;
                 // Motivační hlášky jen při přidání bodu (delta > 0)
