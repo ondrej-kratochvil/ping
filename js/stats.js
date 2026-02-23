@@ -144,7 +144,7 @@ export function calculateOverallStats() {
             let idx = 0;
             while (idx < ranking.length) {
                 const group = getPlaceGroup(idx);
-                const displayPlace = idx + 1; // standard competition ranking (1, 1, 3, 4...)
+                const displayPlace = getDisplayPos(ranking, idx);
                 if (displayPlace > 3) break;
                 group.forEach(stat => {
                     const s = overallStats.get(stat.player.id);

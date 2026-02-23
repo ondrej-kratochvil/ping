@@ -188,7 +188,7 @@ export function renderTournamentScreen() {
             ? `<ol class="space-y-3 mt-4 text-left inline-block">${rest.map((s, i) => {
                 const idx = firstPlace.length + i;
                 const pos = getDisplayPos(stats, idx);
-                const label = trophyByPlace[pos] ?? `#${pos}`;
+                const label = (s.wins > 0 && trophyByPlace[pos]) ? trophyByPlace[pos] : `#${pos}`;
                 return `<li class="flex items-center text-lg"><span class="font-bold w-10 text-center">${label}</span><span>${s.player.name}</span></li>`;
             }).join('')}</ol>`
             : '';
