@@ -325,14 +325,20 @@ export const allActions = {
         const maxPlayers = getPlayerLimitForType(t.type || TOURNAMENT_TYPES.SINGLE);
         if (t.playerIds.length < minPlayers) {
             await showAlertModal(`Minimální počet hráčů pro tento formát je ${minPlayers}.`, 'Chyba');
+            t.name = originalName;
+            t.playerIds = originalPlayerIds;
             return;
         }
         if (isDoubleTournament(t) && t.playerIds.length % 2 !== 0) {
             await showAlertModal('Čtyřhra vyžaduje sudý počet hráčů.', 'Chyba');
+            t.name = originalName;
+            t.playerIds = originalPlayerIds;
             return;
         }
         if (t.playerIds.length > maxPlayers) {
             await showAlertModal(`Maximální počet hráčů je ${maxPlayers}.`, 'Chyba');
+            t.name = originalName;
+            t.playerIds = originalPlayerIds;
             return;
         }
         const playersChanged = originalPlayerIds.length !== t.playerIds.length || originalPlayerIds.some(id => !t.playerIds.includes(id));
