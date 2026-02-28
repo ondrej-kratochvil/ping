@@ -447,7 +447,8 @@ export const allActions = {
         }
         if (newTournament) {
             await loadState();
-            const refreshedTournament = getTournament(newTournament.id);
+            const newId = parseInt(newTournament.id, 10);
+            const refreshedTournament = getTournament(newId);
             if (!refreshedTournament) {
                 console.error('❌ [COPY] Nový turnaj nebyl nalezen po načtení stavu!');
                 await showAlertModal('Turnaj byl vytvořen, ale nepodařilo se ho najít. Obnovte stránku.', 'Upozornění');
