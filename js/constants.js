@@ -10,14 +10,22 @@ export const encouragingPhrases = {
     // Obecné hlášky - vhodné kdykoliv během zápasu
     general: [
         "Pojď, draku!", "To byl úder!", "Skvělá práce!", "Jen tak dál!", "To je ono!",
-        "Paráda!", "Krásná hra.", "Zaber!", "Soustřeď se.",
+        "Paráda!", "Zaber!", "Soustřeď se.",
         "Máš na to!", "Výborně!", "Neskutečné!", "Jak z partesu.", "Tohle se povedlo.",
-        "To je bojovník.", "Krásný bod.", "Ten má formu.", "To byla rychlost!",
+        "To je bojovník.", "Krásný bod.", "Ten má formu.",
         "Nádhera.", "Neuvěřitelný reflex.", "To se cení.", "Hraje jako bůh.", "Z toho se nevyhrabe."
     ],
-    // Hlášky pro blízký konec zápasu (když jeden hráč potřebuje 1-2 body k vítězství)
+    // Hlášky jen když zbývá poslední bod
     nearEnd: [
         "Ještě jeden!", "Téměř tam!", "Poslední bod!", "Finální úder!", "Na dosah vítězství!"
+    ],
+    // Body rychle po sobě (< 3 s)
+    speedPhrases: [
+        "To byla rychlost!", "Blesk!", "Rychlé to bylo!", "Žádná úleva!"
+    ],
+    // Body dlouho po sobě (> 15 s)
+    longRallyPhrases: [
+        "Krásná hra.", "Skvělá výměna!", "To byl zápas!", "Respekt!"
     ],
     // Hlášky pro situaci, kdy hráč prohrál bod (pro budoucí použití)
     afterLoss: [

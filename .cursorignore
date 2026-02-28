@@ -1,0 +1,11 @@
+# CitlivĂ© konfiguraÄŤnĂ­ soubory
+.env
+.env.localhost
+.env.production
+
+# ZĂˇvislosti
+node_modules/
+
+# TestovacĂ­ kopie
+1/
+2/

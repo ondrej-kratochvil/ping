@@ -2,6 +2,20 @@
 import { state } from './state.js';
 import { getGlobalPlayer, getSidePlayerIds, formatPlayersLabel, getTeamKey, isDoubleTournament } from './utils.js';
 
+/** Sdílené kritérium remízy pro pořadí (wins + skóre rozdíl + scoreFor jako 3. tiebreaker). */
+export function isTied(prev, curr) {
+    return prev.wins === curr.wins
+        && (prev.scoreFor - prev.scoreAgainst) === (curr.scoreFor - curr.scoreAgainst)
+        && prev.scoreFor === curr.scoreFor;
+}
+
+/** Standard competition ranking: pozice 1, 1, 3, 4... pro seřazené stats. */
+export function getDisplayPos(stats, i) {
+    if (i === 0) return 1;
+    const prev = stats[i - 1], curr = stats[i];
+    return isTied(prev, curr) ? getDisplayPos(stats, i - 1) : i + 1;
+}
+
 export function calculateStats(t) {
     const statsMap = new Map();
     t.playerIds.forEach(id => {
@@ -118,10 +132,28 @@ export function calculateOverallStats() {
         const isFinished = t.matches.length > 0 && completedMatches.length === t.matches.length;
         if (isFinished) {
             const ranking = calculateStats(t);
-            ranking.slice(0, 3).forEach((stat, i) => {
-                const s = overallStats.get(stat.player.id);
-                if(s) s.places[i+1]++;
-            });
+            const getPlaceGroup = (startIdx) => {
+                if (startIdx >= ranking.length) return [];
+                const first = ranking[startIdx];
+                const group = [first];
+                for (let j = startIdx + 1; j < ranking.length; j++) {
+                    const s = ranking[j];
+                    if (isTied(s, first)) group.push(s);
+                    else break;
+                }
+                return group;
+            };
+            let idx = 0;
+            while (idx < ranking.length) {
+                const group = getPlaceGroup(idx);
+                const displayPlace = getDisplayPos(ranking, idx);
+                if (displayPlace > 3) break;
+                group.forEach(stat => {
+                    const s = overallStats.get(stat.player.id);
+                    if (s) s.places[displayPlace]++;
+                });
+                idx += group.length;
+            }
         }
     });
     return Array.from(overallStats.values()).sort((a, b) => b.wins - a.wins || (b.scoreFor - b.scoreAgainst) - (a.scoreFor - a.scoreAgainst));

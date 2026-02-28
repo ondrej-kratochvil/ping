@@ -1,4 +1,4 @@
-﻿// State management
+// State management
 import { TOURNAMENT_TYPES } from './constants.js';
 
 // Globální state
@@ -14,11 +14,13 @@ export let state = {
     tournaments: [],
     activeTournamentId: null,
     activeMatchId: null,
-    scoreHistory: []
+    scoreHistory: [],
+    lastPointTimestamp: null
 };
 
-export function updateStateWithApiData(data) {
-    state.settings = {
+export function updateStateWithApiData(data, options = {}) {
+    if (!options.skipSettings) {
+        state.settings = {
         soundsEnabled: true,
         voiceAssistEnabled: false,
         voiceInputEnabled: false,
@@ -27,6 +29,7 @@ export function updateStateWithApiData(data) {
         motivationalPhrasesEnabled: true,
         ...(data.settings || {})
     };
+    }
     state.playerDatabase = (data.playerDatabase || []).map(p => ({
         id: parseInt(p.id, 10),
         name: p.name,

@@ -1,3 +1,12 @@
-﻿# UTF-8 encoding pro JavaScript a HTML
+# UTF-8 encoding pro JavaScript a HTML
 AddDefaultCharset utf-8
 AddCharset utf-8 .js .html .php .json
+
+# History API – všechny cesty kromě existujících souborů směřují na index.php
+<IfModule mod_rewrite.c>
+RewriteEngine On
+# Bez RewriteBase – funguje pro /a/ping/ i pro root
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [L]
+</IfModule>
