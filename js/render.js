@@ -8,7 +8,7 @@ import {
     getCzechPlayerDeclension, getMatchResultForPlayers
 } from './utils.js';
 import { playerColors, winningPhrases } from './constants.js';
-import { calculateStats, calculateTeamStats, calculateOverallStats, calculateOverallTeamStats, getDisplayPos } from './stats.js';
+import { calculateStats, calculateTeamStats, calculateOverallStats, calculateOverallTeamStats, getDisplayPos, isTied } from './stats.js';
 import { checkWinCondition } from './game-logic.js';
 import { speak } from './audio.js';
 import { showAlertModal } from './ui.js';
@@ -65,7 +65,7 @@ export function renderMainScreen() {
             if (isFinished) { 
                 const stats = calculateStats(t); 
                 const firstPlace = stats.length > 0 && stats[0].wins > 0
-                    ? stats.filter(s => s.wins === stats[0].wins && (s.scoreFor - s.scoreAgainst) === (stats[0].scoreFor - stats[0].scoreAgainst))
+                    ? stats.filter(s => isTied(s, stats[0]))
                     : [];
                 winnerInfo = firstPlace.length > 0
                     ? firstPlace.map(s => `<p class="font-bold text-yellow-500"><i class="fa-solid fa-trophy"></i> ${s.player.name}</p>`).join('')
@@ -177,7 +177,7 @@ export function renderTournamentScreen() {
     if(isFinished) {
         const stats = calculateStats(t);
         const firstPlace = stats.length > 0 && stats[0].wins > 0
-            ? stats.filter(s => s.wins === stats[0].wins && (s.scoreFor - s.scoreAgainst) === (stats[0].scoreFor - stats[0].scoreAgainst))
+            ? stats.filter(s => isTied(s, stats[0]))
             : [];
         const rest = stats.slice(firstPlace.length);
         const trophyByPlace = { 1: '🏆', 2: '🥈', 3: '🥉' };
