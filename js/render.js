@@ -7,10 +7,9 @@ import {
     getTournamentTypeIcon, getTournamentTypeColor, getTournamentTypeLabel,
     getCzechPlayerDeclension, getMatchResultForPlayers
 } from './utils.js';
-import { playerColors, winningPhrases } from './constants.js';
+import { playerColors } from './constants.js';
 import { calculateStats, calculateTeamStats, calculateOverallStats, calculateOverallTeamStats, getDisplayPos, isTied } from './stats.js';
 import { checkWinCondition } from './game-logic.js';
-import { speak } from './audio.js';
 import { showAlertModal } from './ui.js';
 
 export function getTournamentStatus(t) {
@@ -426,13 +425,8 @@ export function renderGameBoard() {
         </div>`
     );
 
-    if (winnerSide) {
-        const winnerLabel = formatPlayersLabel(winnerSide === 1 ? getSidePlayerIds(t, m, 1) : getSidePlayerIds(t, m, 2));
-        const winnerScore = Math.max(m.score1, m.score2);
-        const loserScore = Math.min(m.score1, m.score2);
-        const randomPhrase = winningPhrases[Math.floor(Math.random() * winningPhrases.length)];
-        speak(`Konec zápasu. Vítěz je ${winnerLabel} s výsledkem ${winnerScore} : ${loserScore}. ${randomPhrase}`);
-    }
+    // Hláška o vítězi se ozve jen v updateScore při zápisu posledního bodu – zde by duplikovala
+    // a při voiceAssistEnabled by druhé volání zrušilo první (synth.cancel) a způsobilo přerušení.
 }
 
 function escapeCsv(value) {
