@@ -316,7 +316,9 @@ export const allActions = {
     'save-settings': async () => {
         const t = getTournament();
         if (t.isLocked) { closeModal(); return; }
+        const originalName = t.name;
         const originalPlayerIds = [...t.playerIds];
+        const originalMatches = [...t.matches];
         t.name = document.getElementById('edit-tournament-name').value.trim() || t.name;
         t.playerIds = tempPlayerIds;
         const minPlayers = getMinPlayersForType(t.type || TOURNAMENT_TYPES.SINGLE);
@@ -342,7 +344,12 @@ export const allActions = {
         }
         const payload = { id: t.id, data: t };
         const result = await apiCall('updateTournament', payload);
-        if (!result?.ok) return;
+        if (!result?.ok) {
+            t.name = originalName;
+            t.playerIds = originalPlayerIds;
+            t.matches = originalMatches;
+            return;
+        }
         closeModal();
         navigateTo({ name: 'tournament', tournamentId: t.id });
         showToast('Nastavení turnaje bylo uloženo', 'success');
