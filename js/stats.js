@@ -2,9 +2,11 @@
 import { state } from './state.js';
 import { getGlobalPlayer, getSidePlayerIds, formatPlayersLabel, getTeamKey, isDoubleTournament } from './utils.js';
 
-/** Sdílené kritérium remízy pro pořadí (wins + skóre rozdíl). */
+/** Sdílené kritérium remízy pro pořadí (wins + skóre rozdíl + scoreFor jako 3. tiebreaker). */
 export function isTied(prev, curr) {
-    return prev.wins === curr.wins && (prev.scoreFor - prev.scoreAgainst) === (curr.scoreFor - curr.scoreAgainst);
+    return prev.wins === curr.wins
+        && (prev.scoreFor - prev.scoreAgainst) === (curr.scoreFor - curr.scoreAgainst)
+        && prev.scoreFor === curr.scoreFor;
 }
 
 /** Standard competition ranking: pozice 1, 1, 3, 4... pro seřazené stats. */

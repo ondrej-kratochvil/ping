@@ -499,7 +499,7 @@ export const allActions = {
         const t = getTournament(tournamentId);
         if (t) {
             t.isLocked = !t.isLocked;
-            navigateTo({ name: 'main' });
+            navigateTo({ name: 'main' }, true);
             apiCall('toggleTournamentLock', { id: tournamentId });
         }
     },
@@ -507,7 +507,7 @@ export const allActions = {
     'show-locked-tournaments':()=>{
         state.settings.showLockedTournaments = true;
         apiCall('saveSettings', { key: 'showLockedTournaments', value: true });
-        navigateTo({ name: 'main' });
+        navigateTo({ name: 'main' }, true);
     },
     'delete-tournament': async (target) => {
         if (!(await showConfirmModal('Opravdu smazat?', 'Smazat turnaj'))) return;

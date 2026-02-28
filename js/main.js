@@ -164,7 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (showLockedToggle) {
             state.settings.showLockedTournaments = showLockedToggle.checked;
             apiCall('saveSettings', { key: 'showLockedTournaments', value: state.settings.showLockedTournaments });
-            navigateTo({ name: 'main' });
+            navigateTo({ name: 'main' }, true);
         }
         const motivationalPhrasesToggle = e.target.closest('[data-action="toggle-motivational-phrases"]');
         if (motivationalPhrasesToggle) {
