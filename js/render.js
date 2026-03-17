@@ -421,7 +421,7 @@ export function renderGameBoard() {
                 ${makeScoreBox(sides.left, leftScore, leftRawSide)}
                 ${makeScoreBox(sides.right, rightScore, rightRawSide)}
             </div>
-            ${winnerSide ? `<div class="absolute bottom-4 left-4 right-4 bg-white p-6 rounded-xl shadow-lg text-center space-y-3 z-20"><div class="text-3xl">🏆</div><h2 class="text-2xl font-bold">Vítěz: ${formatPlayersLabel(winnerSide === 1 ? getSidePlayerIds(t, m, 1) : getSidePlayerIds(t, m, 2))}!</h2><p class="text-gray-500">Výsledek: ${m.score1} : ${m.score2}</p><div class="flex gap-2"><button data-action="undo-last-point" class="btn btn-secondary flex-1" ${state.scoreHistory.length === 0 ? 'disabled' : ''}>Zpět</button><button data-action="save-match-result" class="btn btn-primary flex-1">Uložit výsledek</button></div></div>` : ''}
+            ${winnerSide ? `<div class="absolute inset-0 flex items-center justify-center z-20 bg-black/30"><div class="bg-white p-6 rounded-xl shadow-lg text-center space-y-3 mx-4 w-full max-w-sm"><div class="text-3xl">🏆</div><h2 class="text-2xl font-bold">Vítěz: ${formatPlayersLabel(winnerSide === 1 ? getSidePlayerIds(t, m, 1) : getSidePlayerIds(t, m, 2))}!</h2><p class="text-gray-500">Výsledek: ${m.score1} : ${m.score2}</p><div class="flex gap-2"><button data-action="undo-last-point" class="btn btn-secondary flex-1" ${state.scoreHistory.length === 0 ? 'disabled' : ''}>Zpět</button><button data-action="save-match-result" class="btn btn-primary flex-1">Uložit výsledek</button></div></div></div>` : ''}
         </div>`
     );
 

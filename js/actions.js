@@ -136,20 +136,22 @@ export const updateScore = async (playerId, delta, sideOverride = null) => {
                 const winnerScore = Math.max(m.score1, m.score2);
                 const loserScore = Math.min(m.score1, m.score2);
                 const randomPhrase = winningPhrases[Math.floor(Math.random() * winningPhrases.length)];
-                speak(`Konec zápasu. Vítěz je ${winnerLabel} s výsledkem ${winnerScore} : ${loserScore}. ${randomPhrase}`, true);
+                speak(`Konec zápasu. Vítěz je ${winnerLabel} s výsledkem ${winnerScore} ku ${loserScore}, ${randomPhrase}`, true);
             } else if (servingLabel) {
                 let speechText = `${servingLabel}, ${servingPlayerScore} : ${otherPlayerScore}`;
                 // Motivační hlášky jen při přidání bodu (delta > 0)
                 if (delta > 0 && state.settings.motivationalPhrasesEnabled) {
                     let selectedPhrase = '';
                     const maxScore = Math.max(servingPlayerScore, otherPlayerScore);
+                    const minScore = Math.min(servingPlayerScore, otherPlayerScore);
                     const pointsToWin = t.pointsToWin;
                     const pointsNeeded = pointsToWin - maxScore;
+                    const isDeuce = minScore >= pointsToWin - 1 && minScore === maxScore;
                     const intervalMs = prevTimestamp ? (now - prevTimestamp) : 99999;
                     const intervalSec = intervalMs / 1000;
 
-                    // "Ještě jeden" jen když zbývá poslední bod
-                    if (pointsNeeded === 1) {
+                    // "Ještě jeden" jen když zbývá poslední bod a není shoda (deuce)
+                    if (pointsNeeded === 1 && !isDeuce) {
                         selectedPhrase = encouragingPhrases.nearEnd[Math.floor(Math.random() * encouragingPhrases.nearEnd.length)];
                     } else if (intervalSec < 3 && prevTimestamp) {
                         // Body rychle po sobě
@@ -394,22 +396,14 @@ export const allActions = {
         }
         let cleanBaseNameForCopy = baseName.replace(/\s*\(\d+\)\s*$/, '').trim();
         const existingNames = state.tournaments.map(t => ({ id: t.id, name: t.name }));
-        const newName = generateUniqueTournamentName(cleanBaseNameForCopy, existingNames, currentTournament.id);
+        const newName = generateUniqueTournamentName(cleanBaseNameForCopy, existingNames);
         const mysqlDate = now.getFullYear() + '-' +
             String(now.getMonth() + 1).padStart(2, '0') + '-' +
             String(now.getDate()).padStart(2, '0') + ' ' +
             String(now.getHours()).padStart(2, '0') + ':' +
             String(now.getMinutes()).padStart(2, '0') + ':' +
             String(now.getSeconds()).padStart(2, '0');
-        let newPlayerIds = [...currentTournament.playerIds];
-        if (isDoubleTournament(currentTournament) && newPlayerIds.length >= 4) {
-            const teamSize = newPlayerIds.length / 2;
-            const team1Players = newPlayerIds.slice(0, teamSize);
-            const team2Players = newPlayerIds.slice(teamSize);
-            const reversedTeam1Players = [...team1Players].reverse();
-            const reversedTeam2Players = [...team2Players].reverse();
-            newPlayerIds = [...reversedTeam1Players, ...reversedTeam2Players];
-        }
+        const newPlayerIds = [...currentTournament.playerIds];
         const payload = {
             name: newName,
             pointsToWin: currentTournament.pointsToWin,
@@ -482,7 +476,7 @@ export const allActions = {
                     firstServer: match.firstServer || match.first_server || null,
                     servingPlayer: match.servingPlayer || match.serving_player || null,
                     match_order: matchOrder,
-                    sidesSwapped: true,
+                    sidesSwapped: !(currentTournament.matches[matchOrder]?.sidesSwapped ?? false),
                     doubleRotationState: match.doubleRotationState || match.double_rotation_state || null
                 };
                 const matchResult = await apiCall('updateMatch', { id: matchEntityId, data: matchPayload });
