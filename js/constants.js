@@ -13,19 +13,34 @@ export const encouragingPhrases = {
         "Paráda!", "Zaber!", "Soustřeď se.",
         "Máš na to!", "Výborně!", "Neskutečné!", "Jak z partesu.", "Tohle se povedlo.",
         "To je bojovník.", "Krásný bod.", "Ten má formu.",
-        "Nádhera.", "Neuvěřitelný reflex.", "To se cení.", "Hraje jako bůh.", "Z toho se nevyhrabe."
+        "Nádhera.", "Neuvěřitelný reflex.", "To se cení.", "Hraje jako bůh.", "Z toho se nevyhrabe.",
+        "Bomba!", "Wow!", "Masakr!", "Precizní.", "Bez pardonu.",
+        "Kam se podíváš, samá kvalita.", "Ten má ruku jako chirurg.",
+        "Jako přes kopírák.", "Kdepak, tohle nechytíš.",
+        "Tenhle bod se líbil.", "Už skoro nedýchá.",
+        "To šlo do rohu jak na povel.", "Nepřečetl tenhle míč.",
+        "Parádní top-spin!", "Pěkný servis.",
+        "To se jen tak nevidí.", "Přesnost jako hodinky.",
+        "Tenhle bod byl dar z nebes!", "Bodík přidán.",
+        "Rychlý jako blesk.", "Bez dovolení!", "Bez šance."
     ],
     // Hlášky jen když zbývá poslední bod
     nearEnd: [
-        "Ještě jeden!", "Téměř tam!", "Poslední bod!", "Finální úder!", "Na dosah vítězství!"
+        "Ještě jeden!", "Téměř tam!", "Poslední bod!", "Finální úder!", "Na dosah vítězství!",
+        "Teď nebo nikdy!", "Jeden krok od slávy!", "Tohle je ten moment!",
+        "Nikdo to nezastaví!", "Dej to tam!"
     ],
     // Body rychle po sobě (< 3 s)
     speedPhrases: [
-        "To byla rychlost!", "Blesk!", "Rychlé to bylo!", "Žádná úleva!"
+        "To byla rychlost!", "Blesk!", "Rychlé to bylo!", "Žádná úleva!",
+        "Bleskový protiútok!", "Ani nestihl mrknout!",
+        "To šlo rychle!", "Turbo!"
     ],
     // Body dlouho po sobě (> 15 s)
     longRallyPhrases: [
-        "Krásná hra.", "Skvělá výměna!", "To byl zápas!", "Respekt!"
+        "Krásná hra.", "Skvělá výměna!", "To byl zápas!", "Respekt!",
+        "Výměna jako z učebnice.", "Skoro se nezastavil.",
+        "Hustá přehazovaná!", "To byl úlet!"
     ],
     // Hlášky pro situaci, kdy hráč prohrál bod (pro budoucí použití)
     afterLoss: [
@@ -35,5 +50,7 @@ export const encouragingPhrases = {
 
 export const winningPhrases = [
     "To byla jízda!", "Gratulujeme vítězi!", "Nádherný výkon.", "Absolutně zasloužené vítězství.",
-    "A je to tam!", "Klobouk dolů.", "Tohle byl koncert.", "Bez šance.", "Famózní!"
+    "A je to tam!", "Klobouk dolů.", "Tohle byl koncert.", "Bez šance.", "Famózní!",
+    "Champion!", "Nezastavitelný.", "Tenhle turnaj patřil jemu.",
+    "Vítěz bere vše!", "Legendární výkon.", "Vítěz dne!"
 ];
