@@ -404,6 +404,12 @@ export const allActions = {
             String(now.getMinutes()).padStart(2, '0') + ':' +
             String(now.getSeconds()).padStart(2, '0');
         const newPlayerIds = [...currentTournament.playerIds];
+        // Čtyřhra: prohodit hráče uvnitř každého týmu → změní pořadí podání (A1,A2 → A2,A1)
+        if (isDoubleTournament(currentTournament) && newPlayerIds.length >= 4) {
+            for (let i = 0; i + 1 < newPlayerIds.length; i += 2) {
+                [newPlayerIds[i], newPlayerIds[i + 1]] = [newPlayerIds[i + 1], newPlayerIds[i]];
+            }
+        }
         const payload = {
             name: newName,
             pointsToWin: currentTournament.pointsToWin,
@@ -512,6 +518,7 @@ export const allActions = {
         }
     },
     'open-tournament': (target) => navigateTo({ name: 'tournament', tournamentId: parseInt(target.dataset.id) }),
+    'open-tournament-stats': (target) => navigateTo({ name: 'tournament-stats', tournamentId: parseInt(target.dataset.id) }),
     'show-locked-tournaments':()=>{
         state.settings.showLockedTournaments = true;
         apiCall('saveSettings', { key: 'showLockedTournaments', value: true });

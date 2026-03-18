@@ -147,6 +147,7 @@ Aplikace má responzivní design optimalizovaný pro mobilní zařízení i desk
 - **Toast notifikace**: Po úspěšném vytvoření turnaje nebo uložení nastavení se zobrazí mizející upozornění vpravo dole
 - **Mobilní optimalizace**: Tlačítka se automaticky přizpůsobí úzkým displejům, aby zůstala viditelná
 - **Inteligentní autocomplete**: Při vytváření turnaje se seznam hráčů zobrazí automaticky a zůstane otevřený, dokud není dosaženo minimálního počtu hráčů (2 pro dvouhru, 4 pro čtyřhru)
+- **Rychlý odkaz na statistiky**: Ikona 🏆 u dokončeného turnaje odkazuje přímo na Výsledkovou listinu
 
 ### Kopírování turnaje
 
@@ -262,6 +263,23 @@ Barvy hráčů jsou konzistentní napříč celou aplikací:
 - Barvy se zachovávají v nadcházejících zápasech, modalu "Kdo má první podání" i během samotného zápasu
 - Barvy se určují podle pořadí hráče v seznamu hráčů turnaje
 
+### Statistiky a výsledky
+
+**Výsledková listina** (v detailu turnaje i v celkových statistikách) obsahuje sloupce:
+
+| Zkratka | Význam |
+|---------|--------|
+| Z | Odehráno zápasů |
+| V | Vítězství |
+| P | Porážky |
+| R | Rozdíl V–P (např. +3 nebo −2) |
+| Skóre | Celkové skóre s rozdílem (např. 55:40 (+15)) |
+| Úspěšnost | Procento výher |
+
+**Pořadí hráčů:** 1. počet výher, 2. rozdíl skóre (3. celkové skóre pro v rámci turnaje).
+
+Tabulka **Vzájemné zápasy** řadí hráče ve stejném pořadí jako Výsledková listina.
+
 ### Export dat
 
 Aplikace umožňuje exportovat statistiky turnaje do různých formátů:
@@ -312,12 +330,13 @@ Hlasový asistent poskytuje hlasové hlášení během zápasu:
 - **Konec zápasu:** Po ukončení zápasu hlásí vítěze a finální skóre
 - **Motivační hlášky:** Pokud jsou zapnuté, přidává náhodné motivační hlášky vždy při každém bodu. Hlášky jsou inteligentně vybírány podle situace:
   - **Obecné hlášky** - vhodné kdykoliv během zápasu (např. "Pojď, draku!", "To byl úder!", "Paráda!")
-  - **Hlášky pro blízký konec** - když jeden hráč potřebuje 1-2 body k vítězství (např. "Ještě jeden!", "Téměř tam!", "Poslední bod!")
+  - **Hlášky pro blízký konec** - když jeden hráč potřebuje právě 1 bod k vítězství a není deuce (např. "Ještě jeden!", "Téměř tam!", "Poslední bod!")
 
 **Technické detaily:**
 - Používá Web Speech API (SpeechSynthesis)
 - Jazyk: čeština (cs-CZ)
 - Hlášení se automaticky ruší před novým hlášením, aby se zprávy nekumulovaly
+- Skóre se čte přirozeně česky ("5 ku 3"), nikoli jako řadové číslovky
 
 ## 🔌 API
 
