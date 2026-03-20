@@ -1,6 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&display=swap');
+        :root {
+            --app-primary: #22c55e;
+            --app-accent: #16a34a;
+        }
         html, body { height: 100%; margin: 0; padding: 0; }
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        body { font-family: 'Barlow', sans-serif; background-color: #f3f4f6; }
         .screen { display: none; }
         .screen.active { display: block; }
         #app { height: 100%; }
@@ -34,8 +38,8 @@
             transition: all 0.2s; white-space: nowrap;
         }
         .btn:disabled { background-color: #d1d5db; cursor: not-allowed; color: #6b7280; }
-        .btn-primary { background-color: #22c55e; color: white; }
-        .btn-primary:hover:not(:disabled) { background-color: #16a34a; }
+        .btn-primary { background-color: var(--app-primary); color: white; }
+        .btn-primary:hover:not(:disabled) { background-color: var(--app-accent); }
         .btn-secondary { background-color: #e5e7eb; color: #374151; }
         .btn-secondary:hover:not(:disabled) { background-color: #d1d5db; }
         .btn-danger { background-color: #ef4444; color: white; }

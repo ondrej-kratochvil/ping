@@ -83,6 +83,8 @@ header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
         };
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="<?= htmlspecialchars($config['base_url']) ?>/assets/css/common.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link rel="stylesheet" type="text/css" href="style.css">
@@ -131,6 +133,10 @@ header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
     </script>
 </head>
 <body class="text-gray-800">
+<?php
+define('APP_ID', (int)($_ENV['SENSIO_APP_ID'] ?? getenv('SENSIO_APP_ID') ?: 0));
+require_once $_sensioAuthPath . '/header.php';
+?>
     <div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
     <div id="app" class="max-w-3xl mx-auto p-4">
         <div id="main-screen" class="screen space-y-6">
@@ -138,7 +144,6 @@ header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
                 <h1 class="text-3xl font-bold flex items-center gap-3"><i class="fa-solid fa-trophy text-yellow-400"></i>Ping pong turnaje</h1>
                 <div class="flex items-center gap-2 flex-wrap justify-end md:justify-start">
                     <button data-action="show-new-tournament-modal" data-test-id="new-tournament-button" class="btn btn-primary flex items-center gap-2"><i class="fa-solid fa-plus"></i> Nový turnaj</button>
-                    <a href="/a/sensio-auth/logout.php" class="btn btn-secondary !p-0 h-12 w-12 flex items-center justify-center text-xl" title="Odhlásit se (<?= htmlspecialchars($currentUser['full_name'] ?? $currentUser['email'] ?? '') ?>)"><i class="fa-solid fa-right-from-bracket"></i></a>
                     <div class="relative">
                         <button data-action="toggle-settings-menu" class="btn btn-secondary !p-0 h-12 w-12 flex items-center justify-center text-xl" title="Nastavení aplikace"><i class="fa-solid fa-gear"></i></button>
                         <div id="settings-menu" class="settings-menu hidden">
@@ -215,7 +220,7 @@ header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
         </div>
         <div id="modals-container"></div>
         <footer class="text-center text-xs text-gray-400 py-4 mt-8 border-t border-gray-100">
-            Verze: v<span id="app-version"></span>
+            © Sensio.cz | Verze: v<span id="app-version"></span>
         </footer>
     </div>
 
