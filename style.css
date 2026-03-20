@@ -3,6 +3,7 @@
             --app-primary: #22c55e;
             --app-accent: #16a34a;
         }
+        html { font-size: 17px; }
         html, body { height: 100%; margin: 0; padding: 0; }
         body { font-family: 'Barlow', sans-serif; background-color: var(--bg-page); color: var(--text-primary); }
         .screen { display: none; }
