@@ -1,5 +1,6 @@
 // Autocomplete funkce
 import { state } from './state.js';
+import { t } from './i18n.js';
 
 let autocompleteIndex = -1;
 
@@ -86,7 +87,7 @@ export function setupAutocomplete(inputId, containerId, onSelect, currentIds, op
                     if (!currentPlayerIds.includes(existingPlayer.id)) await onSelect(existingPlayer.id);
                 } else {
                     const { showConfirmModal } = await import('./ui.js');
-                    if (await showConfirmModal(`Hráč "${name}" neexistuje. Chcete ho přidat do databáze a turnaje?`, 'Přidat nového hráče')) {
+                    if (await showConfirmModal(t('autocomplete.add_new_player', { name }), t('autocomplete.add_new_player_title'))) {
                         const newPlayer = { id: Date.now(), name, photoUrl: '', strengths: '', weaknesses: '' };
                         state.playerDatabase.push(newPlayer);
                         const { saveState } = await import('./state.js');

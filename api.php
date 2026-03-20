@@ -5,9 +5,24 @@ ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 
 header("Content-Type: application/json");
-header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Origin: http://localhost");
+header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit(0); }
+
+// Auth guard – validace sensio-auth session
+$_sensioAuthPath = rtrim($_ENV['SENSIO_AUTH_PATH'] ?? getenv('SENSIO_AUTH_PATH') ?: __DIR__ . '/../sensio-auth', '/');
+require_once $_sensioAuthPath . '/config.php';
+require_once $_sensioAuthPath . '/src/Session.php';
+
+$currentUser = validateSession($pdo, $_COOKIE[SESSION_COOKIE_NAME] ?? null);
+if ($currentUser === null) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Unauthorized']);
+    exit;
+}
 
 try {
     $config = require 'config/config.php';
@@ -17,8 +32,6 @@ try {
     echo json_encode(['error' => 'Configuration error']);
     exit();
 }
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit(0); }
 
 // Při chybějícím .env vrátíme srozumitelnou chybu (bez volání mysqli s null)
 $db = $config['db'];
@@ -98,6 +111,7 @@ if ($method === 'POST') {
 }
 
 function handleSaveSettings($conn, $payload) {
+    global $currentUser;
     $key = $payload['key'] ?? null;
     $value = $payload['value'];
 
@@ -144,8 +158,9 @@ function handleSaveSettings($conn, $payload) {
         }
 
         $stringValue = is_bool($value) ? ($value ? 'true' : 'false') : strval($value);
-        $stmtInsert = $conn->prepare("INSERT INTO settings (entity_id, setting_key, setting_value) VALUES (?, ?, ?)");
-        $stmtInsert->bind_param("iss", $entityId, $key, $stringValue);
+        $userId = $currentUser['users_id'];
+        $stmtInsert = $conn->prepare("INSERT INTO settings (entity_id, setting_key, setting_value, valid_user_from) VALUES (?, ?, ?, ?)");
+        $stmtInsert->bind_param("issi", $entityId, $key, $stringValue, $userId);
         $stmtInsert->execute();
     }
 }
@@ -193,6 +208,7 @@ function splitPlayersIntoTeams($playerIds) {
 }
 
 function recreateTournamentTeams($conn, $tournamentId, $playerIds) {
+    global $currentUser;
     invalidateTournamentTeams($conn, $tournamentId);
     $teams = splitPlayersIntoTeams($playerIds);
     if (empty($teams)) {
@@ -200,12 +216,13 @@ function recreateTournamentTeams($conn, $tournamentId, $playerIds) {
     }
 
     $nextTeamEntityId = getNextEntityId($conn, 'tournament_teams');
-    $stmt = $conn->prepare("INSERT INTO tournament_teams (entity_id, tournament_id, team_order, player1_id, player2_id) VALUES (?, ?, ?, ?, ?)");
+    $userId = $currentUser['users_id'];
+    $stmt = $conn->prepare("INSERT INTO tournament_teams (entity_id, tournament_id, team_order, player1_id, player2_id, valid_user_from) VALUES (?, ?, ?, ?, ?, ?)");
     $createdTeams = [];
     foreach ($teams as $order => $pair) {
         $playerA = intval($pair[0]);
         $playerB = intval($pair[1]);
-        $stmt->bind_param("iiiii", $nextTeamEntityId, $tournamentId, $order, $playerA, $playerB);
+        $stmt->bind_param("iiiiii", $nextTeamEntityId, $tournamentId, $order, $playerA, $playerB, $userId);
         $stmt->execute();
         $createdTeams[] = [
             'entity_id' => $nextTeamEntityId,
@@ -218,6 +235,7 @@ function recreateTournamentTeams($conn, $tournamentId, $playerIds) {
 }
 
 function regenerateMatches($conn, $tournamentId, $playerIds, $type) {
+    global $currentUser;
     $stmtInvalidateMatches = $conn->prepare("UPDATE matches SET valid_to = NOW() WHERE tournament_id = ? AND valid_to IS NULL");
     $stmtInvalidateMatches->bind_param("i", $tournamentId);
     $stmtInvalidateMatches->execute();
@@ -237,13 +255,14 @@ function regenerateMatches($conn, $tournamentId, $playerIds, $type) {
             }
         }
         $orderedTeamPairs = orderMatchesForTeamRotation($teamPairs);
-        $matchStmt = $conn->prepare("INSERT INTO matches (entity_id, tournament_id, player1_id, player2_id, team1_id, team2_id, match_order, score1, score2) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0)");
+        $userId = $currentUser['users_id'];
+        $matchStmt = $conn->prepare("INSERT INTO matches (entity_id, tournament_id, player1_id, player2_id, team1_id, team2_id, match_order, score1, score2, valid_user_from) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, ?)");
         foreach ($orderedTeamPairs as $pair) {
             $teamA = $pair[0];
             $teamB = $pair[1];
             $playerA = $teamA['player_ids'][0];
             $playerB = $teamB['player_ids'][0];
-            $matchStmt->bind_param("iiiiiii", $nextMatchEntityId, $tournamentId, $playerA, $playerB, $teamA['entity_id'], $teamB['entity_id'], $order);
+            $matchStmt->bind_param("iiiiiiii", $nextMatchEntityId, $tournamentId, $playerA, $playerB, $teamA['entity_id'], $teamB['entity_id'], $order, $userId);
             $matchStmt->execute();
             $nextMatchEntityId++;
             $order++;
@@ -258,11 +277,12 @@ function regenerateMatches($conn, $tournamentId, $playerIds, $type) {
             }
         }
         $orderedPairs = orderMatchesForPlayerRotation($pairs);
-        $matchStmt = $conn->prepare("INSERT INTO matches (entity_id, tournament_id, player1_id, player2_id, match_order, score1, score2) VALUES (?, ?, ?, ?, ?, 0, 0)");
+        $userId = $currentUser['users_id'];
+        $matchStmt = $conn->prepare("INSERT INTO matches (entity_id, tournament_id, player1_id, player2_id, match_order, score1, score2, valid_user_from) VALUES (?, ?, ?, ?, ?, 0, 0, ?)");
         foreach ($orderedPairs as $pair) {
             $p1 = $pair[0];
             $p2 = $pair[1];
-            $matchStmt->bind_param("iiiii", $nextMatchEntityId, $tournamentId, $p1, $p2, $order);
+            $matchStmt->bind_param("iiiiii", $nextMatchEntityId, $tournamentId, $p1, $p2, $order, $userId);
             $matchStmt->execute();
             $nextMatchEntityId++;
             $order++;
@@ -352,6 +372,7 @@ function handleReorderMatches($conn, $payload) {
 }
 
 function handleSwapSides($conn, $payload) {
+    global $currentUser;
     $matchId = $payload['matchId'] ?? null;
     if (!$matchId) {
         error_log("handleSwapSides: matchId is null");
@@ -383,30 +404,15 @@ function handleSwapSides($conn, $payload) {
     $rotVal = $dbMatch['double_rotation_state'] ?? null;
     $rotIsNull = ($rotVal === null);
     $doubleRotationExpr = $rotIsNull ? 'NULL' : '?';
-    $sqlInsert = "INSERT INTO matches (entity_id, tournament_id, player1_id, player2_id, team1_id, team2_id, score1, score2, completed, first_server, serving_player, match_order, sides_swapped, double_rotation_state) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, $doubleRotationExpr)";
+    $swapUserId = $currentUser['users_id'];
+    $sqlInsert = "INSERT INTO matches (entity_id, tournament_id, player1_id, player2_id, team1_id, team2_id, score1, score2, completed, first_server, serving_player, match_order, sides_swapped, double_rotation_state, valid_user_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, $doubleRotationExpr, ?)";
     $stmtInsert = $conn->prepare($sqlInsert);
     if (!$stmtInsert) {
         error_log("handleSwapSides: Failed to prepare insert: " . $conn->error);
         return;
     }
     if ($rotIsNull) {
-        $stmtInsert->bind_param("iiiiiiiiiiiii",
-            $matchId,
-            $dbMatch['tournament_id'],
-            $dbMatch['player1_id'],
-            $dbMatch['player2_id'],
-            $dbMatch['team1_id'],
-            $dbMatch['team2_id'],
-            $dbMatch['score1'],
-            $dbMatch['score2'],
-            $dbMatch['completed'],
-            $dbMatch['first_server'],
-            $dbMatch['serving_player'],
-            $dbMatch['match_order'],
-            $newSidesSwapped
-        );
-    } else {
-        $stmtInsert->bind_param("iiiiiiiiiiiiis",
+        $stmtInsert->bind_param("iiiiiiiiiiiiii",
             $matchId,
             $dbMatch['tournament_id'],
             $dbMatch['player1_id'],
@@ -420,7 +426,25 @@ function handleSwapSides($conn, $payload) {
             $dbMatch['serving_player'],
             $dbMatch['match_order'],
             $newSidesSwapped,
-            $rotVal
+            $swapUserId
+        );
+    } else {
+        $stmtInsert->bind_param("iiiiiiiiiiiiisi",
+            $matchId,
+            $dbMatch['tournament_id'],
+            $dbMatch['player1_id'],
+            $dbMatch['player2_id'],
+            $dbMatch['team1_id'],
+            $dbMatch['team2_id'],
+            $dbMatch['score1'],
+            $dbMatch['score2'],
+            $dbMatch['completed'],
+            $dbMatch['first_server'],
+            $dbMatch['serving_player'],
+            $dbMatch['match_order'],
+            $newSidesSwapped,
+            $rotVal,
+            $swapUserId
         );
     }
     if (!$stmtInsert->execute()) {
@@ -430,16 +454,18 @@ function handleSwapSides($conn, $payload) {
 }
 
 function handleCreateTournament($conn, $payload) {
+    global $currentUser;
     $type = normalizeTournamentType($payload['type'] ?? TOURNAMENT_TYPE_SINGLE);
     $playerIds = array_map('intval', $payload['playerIds'] ?? []);
     validateTournamentPlayers($type, $playerIds);
 
+    $userId = $currentUser['users_id'];
     $tournamentEntityId = getNextEntityId($conn, 'tournaments');
-    $stmt = $conn->prepare("INSERT INTO tournaments (entity_id, name, points_to_win, tournament_type, valid_from) VALUES (?, ?, ?, ?, ?)");
+    $stmt = $conn->prepare("INSERT INTO tournaments (entity_id, name, points_to_win, tournament_type, valid_from, valid_user_from) VALUES (?, ?, ?, ?, ?, ?)");
     if (!$stmt) {
         throw new Exception("Chyba při přípravě dotazu pro turnaj: " . $conn->error);
     }
-    $stmt->bind_param("isiss", $tournamentEntityId, $payload['name'], $payload['pointsToWin'], $type, $payload['createdAt']);
+    $stmt->bind_param("isissi", $tournamentEntityId, $payload['name'], $payload['pointsToWin'], $type, $payload['createdAt'], $userId);
     if (!$stmt->execute()) {
         throw new Exception("Chyba při vytváření turnaje: " . $stmt->error);
     }
@@ -451,12 +477,12 @@ function handleCreateTournament($conn, $payload) {
     }
 
     $nextTpEntityId = getNextEntityId($conn, 'tournament_players');
-    $playerStmt = $conn->prepare("INSERT INTO tournament_players (entity_id, tournament_id, player_id, player_order) VALUES (?, ?, ?, ?)");
+    $playerStmt = $conn->prepare("INSERT INTO tournament_players (entity_id, tournament_id, player_id, player_order, valid_user_from) VALUES (?, ?, ?, ?, ?)");
     if (!$playerStmt) {
         throw new Exception("Chyba při přípravě dotazu pro hráče turnaje: " . $conn->error);
     }
     foreach ($playerIds as $order => $playerId) {
-        $playerStmt->bind_param("iiii", $nextTpEntityId, $tournamentEntityId, $playerId, $order);
+        $playerStmt->bind_param("iiiii", $nextTpEntityId, $tournamentEntityId, $playerId, $order, $userId);
         if (!$playerStmt->execute()) {
             throw new Exception("Chyba při vkládání hráče do turnaje: " . $playerStmt->error);
         }
@@ -467,6 +493,7 @@ function handleCreateTournament($conn, $payload) {
 }
 
 function handleToggleTournamentLock($conn, $payload) {
+    global $currentUser;
     $id = $payload['id'];
     if (!$id) return;
 
@@ -482,13 +509,15 @@ function handleToggleTournamentLock($conn, $payload) {
         $stmtUpdate->bind_param("i", $id);
         $stmtUpdate->execute();
         
-        $stmtInsert = $conn->prepare("INSERT INTO tournaments (entity_id, name, points_to_win, tournament_type, is_locked, valid_from) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmtInsert->bind_param("isisis", $id, $dbTournament['name'], $dbTournament['points_to_win'], $dbTournament['tournament_type'], $newIsLocked, $dbTournament['valid_from']);
+        $userId = $currentUser['users_id'];
+        $stmtInsert = $conn->prepare("INSERT INTO tournaments (entity_id, name, points_to_win, tournament_type, is_locked, valid_from, valid_user_from) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmtInsert->bind_param("isisisi", $id, $dbTournament['name'], $dbTournament['points_to_win'], $dbTournament['tournament_type'], $newIsLocked, $dbTournament['valid_from'], $userId);
         $stmtInsert->execute();
     }
 }
 
 function handleUpdateTournament($conn, $payload) {
+    global $currentUser;
     $id = $payload['id'];
     $data = $payload['data'];
 
@@ -517,8 +546,9 @@ function handleUpdateTournament($conn, $payload) {
         $stmtUpdate->bind_param("i", $id);
         $stmtUpdate->execute();
         
-        $stmtInsert = $conn->prepare("INSERT INTO tournaments (entity_id, name, points_to_win, tournament_type, is_locked, valid_from) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmtInsert->bind_param("isisis", $id, $data['name'], $data['pointsToWin'], $requestedType, $data['isLocked'], $data['createdAt']);
+        $userId = $currentUser['users_id'];
+        $stmtInsert = $conn->prepare("INSERT INTO tournaments (entity_id, name, points_to_win, tournament_type, is_locked, valid_from, valid_user_from) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmtInsert->bind_param("isisisi", $id, $data['name'], $data['pointsToWin'], $requestedType, $data['isLocked'], $data['createdAt'], $userId);
         $stmtInsert->execute();
     }
 
@@ -549,12 +579,13 @@ function handleUpdateTournament($conn, $payload) {
         }
 
         $nextTpEntityId = getNextEntityId($conn, 'tournament_players');
-        $stmtInsertPlayer = $conn->prepare("INSERT INTO tournament_players (entity_id, tournament_id, player_id, player_order) VALUES (?, ?, ?, ?)");
+        $tpUserId = $currentUser['users_id'];
+        $stmtInsertPlayer = $conn->prepare("INSERT INTO tournament_players (entity_id, tournament_id, player_id, player_order, valid_user_from) VALUES (?, ?, ?, ?, ?)");
         $stmtInvalidateReordered = $conn->prepare("UPDATE tournament_players SET valid_to = NOW() WHERE entity_id = ?");
 
         foreach ($newPlayerIds as $newOrder => $playerId) {
             if (!isset($dbPlayerMap[$playerId])) {
-                $stmtInsertPlayer->bind_param("iiii", $nextTpEntityId, $id, $playerId, $newOrder);
+                $stmtInsertPlayer->bind_param("iiiii", $nextTpEntityId, $id, $playerId, $newOrder, $tpUserId);
                 $stmtInsertPlayer->execute();
                 $nextTpEntityId++;
             } else {
@@ -562,8 +593,8 @@ function handleUpdateTournament($conn, $payload) {
                 if ($oldPlayerInfo['order'] != $newOrder) {
                     $stmtInvalidateReordered->bind_param("i", $oldPlayerInfo['entity_id']);
                     $stmtInvalidateReordered->execute();
-                    
-                    $stmtInsertPlayer->bind_param("iiii", $nextTpEntityId, $id, $playerId, $newOrder);
+
+                    $stmtInsertPlayer->bind_param("iiiii", $nextTpEntityId, $id, $playerId, $newOrder, $tpUserId);
                     $stmtInsertPlayer->execute();
                     $nextTpEntityId++;
                 }
@@ -577,6 +608,7 @@ function handleUpdateTournament($conn, $payload) {
 }
 
 function handleUpdateMatch($conn, $payload) {
+    global $currentUser;
     $id = $payload['id'];
     $data = $payload['data'];
     
@@ -648,7 +680,7 @@ function handleUpdateMatch($conn, $payload) {
         
         // Pro NULL hodnoty v integer sloupcích musíme použít dynamický SQL dotaz
         // Sestavíme SQL dotaz s podmínkami pro NULL hodnoty
-        $sql = "INSERT INTO matches (entity_id, tournament_id, player1_id, player2_id, team1_id, team2_id, score1, score2, completed, first_server, serving_player, match_order, sides_swapped, double_rotation_state) VALUES (?, ?, ?, ?, ";
+        $sql = "INSERT INTO matches (entity_id, tournament_id, player1_id, player2_id, team1_id, team2_id, score1, score2, completed, first_server, serving_player, match_order, sides_swapped, double_rotation_state, valid_user_from) VALUES (?, ?, ?, ?, ";
         
         // Pro team1_id a team2_id použijeme podmínky
         if ($dataTeam1 !== null) {
@@ -678,9 +710,9 @@ function handleUpdateMatch($conn, $payload) {
         
         // double_rotation_state může být NULL – nebindujeme jako "s"
         if ($normalizedRotationState === null) {
-            $sql .= "?, ?, NULL)";
+            $sql .= "?, ?, NULL, ?)";
         } else {
-            $sql .= "?, ?, ?)";
+            $sql .= "?, ?, ?, ?)";
         }
         
         $stmtInsert = $conn->prepare($sql);
@@ -738,7 +770,10 @@ function handleUpdateMatch($conn, $payload) {
             $bindRotationState = $normalizedRotationState;
             $bindParams[] = &$bindRotationState;
         }
-        
+        $types .= "i";
+        $bindUserId = $currentUser['users_id'];
+        $bindParams[] = &$bindUserId;
+
         // Použijeme call_user_func_array pro bind_param s dynamickým počtem parametrů
         $bindResult = call_user_func_array([$stmtInsert, 'bind_param'], $bindParams);
         
@@ -755,6 +790,7 @@ function handleUpdateMatch($conn, $payload) {
 }
 
 function handleSavePlayer($conn, $payload) {
+    global $currentUser;
     $id = $payload['id'] ?? null;
     $data = $payload['data'];
     
@@ -773,32 +809,38 @@ function handleSavePlayer($conn, $payload) {
             $stmtUpdate->bind_param("i", $id);
             $stmtUpdate->execute();
 
-            $stmtInsert = $conn->prepare("INSERT INTO players (entity_id, name, nickname, photo_url, strengths, weaknesses) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmtInsert->bind_param("isssss", $id, $data['name'], $newNickname, $data['photoUrl'], $data['strengths'], $data['weaknesses']);
+            $userId = $currentUser['users_id'];
+            $stmtInsert = $conn->prepare("INSERT INTO players (entity_id, name, nickname, photo_url, strengths, weaknesses, valid_user_from) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $stmtInsert->bind_param("isssssi", $id, $data['name'], $newNickname, $data['photoUrl'], $data['strengths'], $data['weaknesses'], $userId);
             $stmtInsert->execute();
         }
 } else {
         $nextEntityId = getNextEntityId($conn, 'players');
         $newNickname = $data['nickname'] ?? null;
-        $stmtInsert = $conn->prepare("INSERT INTO players (entity_id, name, nickname, photo_url, strengths, weaknesses) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmtInsert->bind_param("isssss", $nextEntityId, $data['name'], $newNickname, $data['photoUrl'], $data['strengths'], $data['weaknesses']);
+        $userId = $currentUser['users_id'];
+        $stmtInsert = $conn->prepare("INSERT INTO players (entity_id, name, nickname, photo_url, strengths, weaknesses, valid_user_from) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmtInsert->bind_param("isssssi", $nextEntityId, $data['name'], $newNickname, $data['photoUrl'], $data['strengths'], $data['weaknesses'], $userId);
         $stmtInsert->execute();
     }
 }
 
 function handleDeletePlayer($conn, $payload) {
+    global $currentUser;
     $id = $payload['id'];
     if (!$id) return;
-    $stmt = $conn->prepare("UPDATE players SET valid_to = NOW() WHERE entity_id = ? AND valid_to IS NULL");
-    $stmt->bind_param("i", $id);
+    $userId = $currentUser['users_id'];
+    $stmt = $conn->prepare("UPDATE players SET valid_to = NOW(), valid_user_to = ? WHERE entity_id = ? AND valid_to IS NULL");
+    $stmt->bind_param("ii", $userId, $id);
     $stmt->execute();
 }
 
 function handleDeleteTournament($conn, $payload) {
+    global $currentUser;
     $id = $payload['id'];
     if (!$id) return;
-    $stmt = $conn->prepare("UPDATE tournaments SET valid_to = NOW() WHERE entity_id = ? AND valid_to IS NULL");
-    $stmt->bind_param("i", $id);
+    $userId = $currentUser['users_id'];
+    $stmt = $conn->prepare("UPDATE tournaments SET valid_to = NOW(), valid_user_to = ? WHERE entity_id = ? AND valid_to IS NULL");
+    $stmt->bind_param("ii", $userId, $id);
     $stmt->execute();
 }
 

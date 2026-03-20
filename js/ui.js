@@ -1,4 +1,5 @@
 // UI funkce - modals, toast, screens
+import { t } from './i18n.js';
 
 let modalsContainer;
 let screens;
@@ -79,7 +80,8 @@ export function showToast(message, type = 'success', duration = 3000) {
 }
 
 // Funkce pro zobrazení alert modalu místo alert()
-export function showAlertModal(message, title = 'Upozornění', autoClose = false) {
+export function showAlertModal(message, title = null, autoClose = false) {
+    if (title === null) title = t('common.warning');
     return new Promise((resolve) => {
         const autoCloseAttr = (autoClose || window.TESTING_MODE) ? 'data-test-auto-close="true"' : '';
         openModal(`
@@ -87,11 +89,11 @@ export function showAlertModal(message, title = 'Upozornění', autoClose = fals
                 <div class="modal-content space-y-4">
                     <div class="flex justify-between items-center">
                         <h2 class="text-xl font-bold">${title}</h2>
-                        <button data-action="close-alert-modal" data-test-id="close-alert-modal" class="text-gray-400 text-2xl hover:text-gray-700">&times;</button>
+                        <button data-action="close-alert-modal" data-test-id="close-alert-modal" class="text-muted text-2xl hover:opacity-70">&times;</button>
                     </div>
-                    <p class="text-gray-700">${message}</p>
+                    <p ${message}</p>
                     <div class="flex justify-end">
-                        <button data-action="close-alert-modal" data-test-id="alert-modal-ok" class="btn btn-primary">OK</button>
+                        <button data-action="close-alert-modal" data-test-id="alert-modal-ok" class="btn btn-primary">${t('common.ok')}</button>
                     </div>
                 </div>
             </div>
@@ -120,7 +122,8 @@ export function showAlertModal(message, title = 'Upozornění', autoClose = fals
 }
 
 // Funkce pro zobrazení confirm modalu místo confirm()
-export function showConfirmModal(message, title = 'Potvrzení', autoConfirm = false) {
+export function showConfirmModal(message, title = null, autoConfirm = false) {
+    if (title === null) title = t('common.confirmation');
     return new Promise((resolve) => {
         const autoCloseAttr = (autoConfirm || window.TESTING_MODE) ? 'data-test-auto-close="true"' : '';
         openModal(`
@@ -128,12 +131,12 @@ export function showConfirmModal(message, title = 'Potvrzení', autoConfirm = fa
                 <div class="modal-content space-y-4">
                     <div class="flex justify-between items-center">
                         <h2 class="text-xl font-bold">${title}</h2>
-                        <button data-action="close-confirm-modal" data-test-id="close-confirm-modal" class="text-gray-400 text-2xl hover:text-gray-700">&times;</button>
+                        <button data-action="close-confirm-modal" data-test-id="close-confirm-modal" class="text-muted text-2xl hover:opacity-70">&times;</button>
                     </div>
-                    <p class="text-gray-700">${message}</p>
+                    <p ${message}</p>
                     <div class="flex gap-2 justify-end">
-                        <button data-action="cancel-confirm-modal" data-test-id="confirm-modal-cancel" class="btn btn-secondary">Zrušit</button>
-                        <button data-action="confirm-confirm-modal" data-test-id="confirm-modal-confirm" class="btn btn-primary">Potvrdit</button>
+                        <button data-action="cancel-confirm-modal" data-test-id="confirm-modal-cancel" class="btn btn-secondary">${t('common.cancel')}</button>
+                        <button data-action="confirm-confirm-modal" data-test-id="confirm-modal-confirm" class="btn btn-primary">${t('common.confirm')}</button>
                     </div>
                 </div>
             </div>

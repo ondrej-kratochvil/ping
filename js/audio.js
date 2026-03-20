@@ -1,5 +1,6 @@
 // Audio a voice funkce
 import { state } from './state.js';
+import { currentLang } from './i18n.js';
 
 let audioContext;
 let synth = window.speechSynthesis;
@@ -43,7 +44,7 @@ export function speak(text, force = false, onEnd = null) {
     }
     synth.cancel();
     let utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'cs-CZ';
+    utterance.lang = currentLang() === 'en' ? 'en-US' : 'cs-CZ';
     utterance.volume = state.settings.voiceVolume ?? 1;
     if (onEnd && typeof onEnd === 'function') { utterance.onend = () => onEnd(); }
     synth.speak(utterance);

@@ -1,6 +1,6 @@
 # 🏓 Ping Pong Turnajová Aplikace
 
-Aplikace pro správu a sledování ping pong turnajů s podporou více turnajů, statistik a detailního sledování zápasů.
+Aplikace pro správu a sledování ping pong turnajů s podporou více turnajů, statistik a detailního sledování zápasů. Součást ekosystému Sensio.cz mini-apps.
 
 ## 📋 Obsah
 
@@ -15,9 +15,10 @@ Aplikace pro správu a sledování ping pong turnajů s podporou více turnajů,
 
 ### Požadavky
 
-- PHP 7.4 nebo vyšší
+- PHP 8.4 nebo vyšší
 - MySQL/MariaDB 5.7 nebo vyšší
 - Apache/Nginx web server
+- **Sensio Auth** – SSO autentizace (repozitář `sensio-auth` ve vedlejší složce)
 - Node.js (pro Cypress testy - volitelné)
 
 ### Kroky instalace
@@ -42,10 +43,13 @@ Aplikace pro správu a sledování ping pong turnajů s podporou více turnajů,
      DB_USER=root
      DB_PASS=vertrigo
      DEBUG=true
+     SENSIO_AUTH_PATH=../sensio-auth
+     SENSIO_APP_ID=0
      ```
 
-4. **Nainstalujte zĂˇvislosti** (pro testy)
+4. **Nainstalujte závislosti** (pro testy)
    ```bash
+   cd dev
    npm install
    ```
    SloĹľka `node_modules` je v `.gitignore` â€“ po klonovĂˇnĂ­ je tĹ™eba spustit `npm install`.
@@ -75,6 +79,8 @@ DB_NAME=sensiocz02          # Název databáze
 DB_USER=root                # Uživatel databáze
 DB_PASS=vertrigo            # Heslo databáze
 DEBUG=true                   # Debug mód (true/false)
+SENSIO_AUTH_PATH=../sensio-auth  # Cesta k sensio-auth (SSO)
+SENSIO_APP_ID=0              # ID aplikace v sensio-auth apps tabulce
 ```
 
 ## 📁 Struktura projektu
@@ -82,21 +88,43 @@ DEBUG=true                   # Debug mód (true/false)
 ```
 ping/
 ├── api.php                  # Backend API endpoint
-├── index.php                # Hlavní frontend aplikace
-├── style.css                # CSS styly aplikace
+├── index.php                # Hlavní frontend aplikace (+ sensio-auth integrace, i18n embedding)
+├── style.css                # CSS styly aplikace (dark theme, CSS proměnné)
 ├── config/
 │   └── config.php          # Konfigurace databáze a prostředí
-├── docs/                   # Dokumentace (viz sekce Dokumentace)
+├── i18n/
+│   ├── cs.json             # České překlady (~230 klíčů)
+│   └── en.json             # Anglické překlady
+├── js/
+│   ├── i18n.js             # Internationalization modul (t(), t_plural(), translateDOM())
+│   ├── main.js             # Vstupní bod aplikace
+│   ├── render.js           # Renderování všech obrazovek
+│   ├── actions.js          # Akce aplikace (modály, validace)
+│   ├── constants.js        # Konstanty a motivační fráze (z JSON překladu)
+│   ├── utils.js            # Utility funkce
+│   ├── ui.js               # UI funkce (modaly, toast, screen management)
+│   ├── api.js              # API komunikace
+│   ├── audio.js            # Zvuky a speech synthesis
+│   ├── voice-input.js      # Hlasové ovládání (Web Speech API)
+│   ├── autocomplete.js     # Autocomplete pro výběr hráčů
+│   ├── state.js            # State management
+│   ├── stats.js            # Výpočet statistik
+│   ├── game-logic.js       # Herní logika (podání, rotace)
+│   ├── router.js           # URL routing (History API)
+│   └── utils/
+│       └── tournament-utils.js
 ├── migrations/             # SQL migrační skripty
-├── tests/                  # Testovací soubory
-├── js/                     # JavaScript moduly (včetně router.js)
-├── cypress/                # Cypress E2E testy
-├── data/                   # Data soubory (pokud jsou)
+├── dev/                    # Neprodukční soubory (docs, testy, skripty)
+│   ├── docs/               # Dokumentace
+│   ├── cypress/             # Cypress E2E testy
+│   ├── tests/               # Testovací soubory
+│   ├── data/                # Datové soubory
+│   ├── ping3.sql            # SQL skript pro vytvoření databáze
+│   ├── package.json         # Node.js závislosti
+│   ├── cypress.config.js    # Konfigurace Cypress
+│   └── vitest.config.js     # Konfigurace Vitest
 ├── .env.localhost          # Lokální konfigurace (NEPŘIDÁVAT DO GIT)
-├── .env.production         # Produkční konfigurace (NEPŘIDÁVAT DO GIT)
 ├── .env.example            # Šablona konfigurace
-├── ping3.sql               # SQL skript pro vytvoření databáze
-├── package.json            # Node.js závislosti
 └── README.md               # Tento soubor
 ```
 
@@ -104,19 +132,19 @@ ping/
 
 Všechna dokumentace je umístěna ve složce `/docs`:
 
-- **[MANUAL_TEST_SUITE.md](docs/MANUAL_TEST_SUITE.md)** - Kompletní sada manuálních testů
-- **[TESTING_SOLUTION.md](docs/TESTING_SOLUTION.md)** - Řešení problému s dynamickými `aria-ref` atributy
-- **[TESTING_HELPERS.md](docs/TESTING_HELPERS.md)** - Helper funkce pro automatizované testování
-- **[TESTING_QUICK_REFERENCE.md](docs/TESTING_QUICK_REFERENCE.md)** - Rychlý referenční průvodce pro testování
-- **[TESTING_BROWSER_TOOLS_GUIDE.md](docs/TESTING_BROWSER_TOOLS_GUIDE.md)** - Průvodce používáním Browser nástrojů
-- **[MANUAL_TESTING_GUIDE.md](docs/MANUAL_TESTING_GUIDE.md)** - Průvodce rychlým manuálním testováním
-- **[MISSING_IMPLEMENTATIONS.md](docs/MISSING_IMPLEMENTATIONS.md)** - Seznam chybějících implementací v UI
-- **[TESTING_IMPROVEMENTS.md](docs/TESTING_IMPROVEMENTS.md)** - Detailní návrhy na zlepšení testování
-- **[TEST_SWAP_SIDES.md](docs/TEST_SWAP_SIDES.md)** - Dokumentace k funkci prohození stran
-- **[ROUTING.md](docs/ROUTING.md)** - Routování a mapování URL
-- **[INSTALACE_NODEJS.md](docs/INSTALACE_NODEJS.md)** - Instalační průvodce pro Node.js
-- **[REFACTORING_PLAN.md](docs/REFACTORING_PLAN.md)** - Plán refaktoringu
-- **[STATUS_IMPLEMENTACE.md](docs/STATUS_IMPLEMENTACE.md)** - Status implementace funkcionalit
+- **[MANUAL_TEST_SUITE.md](dev/docs/MANUAL_TEST_SUITE.md)** - Kompletní sada manuálních testů
+- **[TESTING_SOLUTION.md](dev/docs/TESTING_SOLUTION.md)** - Řešení problému s dynamickými `aria-ref` atributy
+- **[TESTING_HELPERS.md](dev/docs/TESTING_HELPERS.md)** - Helper funkce pro automatizované testování
+- **[TESTING_QUICK_REFERENCE.md](dev/docs/TESTING_QUICK_REFERENCE.md)** - Rychlý referenční průvodce pro testování
+- **[TESTING_BROWSER_TOOLS_GUIDE.md](dev/docs/TESTING_BROWSER_TOOLS_GUIDE.md)** - Průvodce používáním Browser nástrojů
+- **[MANUAL_TESTING_GUIDE.md](dev/docs/MANUAL_TESTING_GUIDE.md)** - Průvodce rychlým manuálním testováním
+- **[MISSING_IMPLEMENTATIONS.md](dev/docs/MISSING_IMPLEMENTATIONS.md)** - Seznam chybějících implementací v UI
+- **[TESTING_IMPROVEMENTS.md](dev/docs/TESTING_IMPROVEMENTS.md)** - Detailní návrhy na zlepšení testování
+- **[TEST_SWAP_SIDES.md](dev/docs/TEST_SWAP_SIDES.md)** - Dokumentace k funkci prohození stran
+- **[ROUTING.md](dev/docs/ROUTING.md)** - Routování a mapování URL
+- **[INSTALACE_NODEJS.md](dev/docs/INSTALACE_NODEJS.md)** - Instalační průvodce pro Node.js
+- **[REFACTORING_PLAN.md](dev/docs/REFACTORING_PLAN.md)** - Plán refaktoringu
+- **[STATUS_IMPLEMENTACE.md](dev/docs/STATUS_IMPLEMENTACE.md)** - Status implementace funkcionalit
 
 ## 🗄️ Databáze
 
@@ -132,13 +160,46 @@ Všechna dokumentace je umístěna ve složce `/docs`:
 
 ### Temporal Versioning
 
-Aplikace používá temporal versioning pattern - místo UPDATE se používají INSERT s `valid_to` timestampem. Aktuální záznamy mají `valid_to = NULL`.
+Aplikace používá temporal versioning pattern - místo UPDATE se používají INSERT s `valid_to` timestampem. Aktuální záznamy mají `valid_to = NULL`. Sloupce `valid_user_from` a `valid_user_to` zaznamenávají ID přihlášeného uživatele, který změnu provedl.
 
 ### Migrace
 
 Pro přidání nových sloupců nebo změny struktury použijte migrační skripty v SQL formátu.
 
 ## 🎮 Funkcionality
+
+### Sensio Auth integrace (SSO)
+
+Aplikace je integrována do ekosystému Sensio.cz prostřednictvím sdíleného přihlašování:
+
+- **SSO přihlášení** přes `gatekeeper.php` – uživatel se přihlásí jednou a je přihlášen ve všech mini-apps
+- **Sdílený header** z `header.php` – logo, waffle menu (přepínač aplikací), user menu, přepínač jazyků a tmavého tématu
+- **Temporal versioning** – všechny INSERT/UPDATE dotazy zaznamenávají `valid_user_from`/`valid_user_to` (ID přihlášeného uživatele)
+- **Konfigurace:** `SENSIO_AUTH_PATH` v `.env` ukazuje na adresář sensio-auth, `SENSIO_APP_ID` identifikuje aplikaci
+
+### Tmavé téma (Dark mode)
+
+Aplikace plně podporuje tmavé téma v souladu se Sensio design standardem:
+
+- **CSS proměnné** z `common.css` sensio-auth (`--bg-page`, `--bg-card`, `--text-primary`, `--border-color` atd.)
+- **Tři vrstvy kaskády:** výchozí light → systémová preference (`prefers-color-scheme`) → explicitní volba uživatele (`data-theme`)
+- **Sémantické utility třídy:** `.card`, `.text-muted`, `.surface-alt`, `.border-subtle`
+- **Tailwind dark: varianty** pro podmíněné barvy (matice výher/proher, toggle switche)
+- **PDF export** zůstává světlý (pro tisk)
+- Přepínač v sensio-auth headeru, preference uložena v `localStorage` (`sensio_theme`)
+
+### Lokalizace (CS/EN)
+
+Aplikace podporuje češtinu a angličtinu:
+
+- **~230 překladových klíčů** v `i18n/cs.json` a `i18n/en.json`
+- **JS modul** `js/i18n.js` s funkcemi `t(key, vars)`, `t_plural(key, count, vars)`, `currentLang()`
+- **PHP embedding:** `index.php` načte správný JSON dle cookie `sensio_lang` a embedne ho jako `window.__PING_I18N__`
+- **Statické HTML** přeloženo přes `data-i18n` atributy a PHP `tp()` helper
+- **Pluralizace:** česká (one/few/other) a anglická (one/other) pro skloňování (hráč/hráči/hráčů)
+- **Motivační fráze a voice commands** přeloženy v JSON souborech
+- **Speech synthesis** a **Web Speech API** automaticky přepínají jazyk (`cs-CZ` / `en-US`)
+- Přepínač jazyků v sensio-auth headeru, preference uložena v cookie `sensio_lang` (1 rok)
 
 ### Uživatelské rozhraní
 
@@ -334,9 +395,9 @@ Hlasový asistent poskytuje hlasové hlášení během zápasu:
 
 **Technické detaily:**
 - Používá Web Speech API (SpeechSynthesis)
-- Jazyk: čeština (cs-CZ)
+- Jazyk se automaticky přepíná dle aktuální lokalizace (cs-CZ / en-US)
 - Hlášení se automaticky ruší před novým hlášením, aby se zprávy nekumulovaly
-- Skóre se čte přirozeně česky ("5 ku 3"), nikoli jako řadové číslovky
+- Skóre se čte přirozeně ("5 ku 3"), nikoli jako řadové číslovky
 
 ## 🔌 API
 
@@ -402,6 +463,7 @@ Všechny POST požadavky musí obsahovat JSON s `action` a `payload`:
 ### Spuštění testů
 
 ```bash
+cd dev
 npm install
 npm run cypress:open
 ```

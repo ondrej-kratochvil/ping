@@ -1,11 +1,12 @@
 // Utility funkce
 import { state } from './state.js';
 import { TOURNAMENT_TYPES, playerColors } from './constants.js';
+import { t, t_plural, currentLang } from './i18n.js';
 
 export const getGlobalPlayer = (id) => state.playerDatabase.find(p => p.id === id);
 export const getTournament = (id = state.activeTournamentId) => state.tournaments.find(t => t.id === id);
 export const getMatch = (tournament, matchId) => tournament.matches.find(m => m.id == matchId);
-export const formatDate = (iso) => new Date(iso).toLocaleDateString('cs-CZ');
+export const formatDate = (iso) => new Date(iso).toLocaleDateString(currentLang() === 'en' ? 'en-US' : 'cs-CZ');
 export const cloneState = (value) => value ? JSON.parse(JSON.stringify(value)) : null;
 export const isDoubleTournament = (t) => (t?.type || TOURNAMENT_TYPES.SINGLE) === TOURNAMENT_TYPES.DOUBLE;
 export const getPlayerColor = (tournament, playerId) => {
@@ -32,7 +33,7 @@ export const formatPlayersLabel = (playerIds) => {
     const names = playerIds
         .map(id => getGlobalPlayer(id)?.name)
         .filter(Boolean);
-    return names.length ? names.join(' + ') : 'Neznámý tým';
+    return names.length ? names.join(' + ') : t('player.unknown_team');
 };
 export const buildSideDescriptor = (t, playerIds, teamId) => {
     const primaryPlayerId = playerIds[0] ?? null;
@@ -59,7 +60,7 @@ export const getDisplaySides = (t, match) => {
         }
     };
 };
-export const getTournamentTypeLabel = (t) => isDoubleTournament(t) ? 'Čtyřhra' : 'Dvouhra';
+export const getTournamentTypeLabel = (tournament) => isDoubleTournament(tournament) ? t('tournament_new.type_double') : t('tournament_new.type_single');
 export const getTournamentTypeIcon = (t) => isDoubleTournament(t) ? 'fa-users' : 'fa-user';
 export const getTournamentTypeColor = (t) => isDoubleTournament(t) ? 'text-blue-600' : 'text-green-600';
 export const getPlayerLimitForType = (type) => type === TOURNAMENT_TYPES.DOUBLE ? 16 : 8;
@@ -79,8 +80,4 @@ export const getMatchResultForPlayers = (t, match, playerAId, playerBId) => {
     }
     return null;
 };
-export const getCzechPlayerDeclension = (count) => {
-    if (count === 1) return 'hráč';
-    if (count >= 2 && count <= 4) return 'hráči';
-    return 'hráčů';
-};
+export const getCzechPlayerDeclension = (count) => t_plural('player.count', count, { count });

@@ -2,6 +2,7 @@
 import { getTournament, getMatch, getGlobalPlayer, getSidePlayerIds } from './utils.js';
 import { showToast } from './ui.js';
 import { speak } from './audio.js';
+import { t, tRaw, currentLang } from './i18n.js';
 
 class VoiceInputManager {
     constructor() {
@@ -10,28 +11,13 @@ class VoiceInputManager {
         this.keywords = new Map(); // word -> playerId
         this.actions = {}; // actionName -> callback
         this.context = 'game'; // 'game' | 'setup'
-        this.lang = 'cs-CZ';
+        this.lang = currentLang() === 'en' ? 'en-US' : 'cs-CZ';
         this.restartTimer = null;
         this.speakingInProgress = false;
         this.processedIndices = new Set();
-        
-        // Mapování českých příkazů na klíče akcí
-        this.commandMap = {
-            'game': {
-                'zpět': 'undo',
-                'opravit': 'undo',
-                'vrátit': 'undo',
-                'vyměnit strany': 'swapSides',
-                'změna stran': 'swapSides',
-                'otočit strany': 'swapSides',
-                'pauza': 'suspend',
-                'přerušit': 'suspend',
-                'konec': 'suspend'
-            },
-            'setup': {
-                // V setupu (výběr podání) mapujeme jména přímo na akci setFirstServer
-            }
-        };
+
+        // Mapování příkazů na klíče akcí - načteno z překladů
+        this.commandMap = this._buildCommandMap();
 
         if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -46,6 +32,18 @@ class VoiceInputManager {
         } else {
             console.warn('Web Speech API is not supported in this browser.');
         }
+    }
+
+    _buildCommandMap() {
+        const gameCommands = tRaw('voice_commands.game') || {};
+        const map = { game: {}, setup: {} };
+        for (const [actionKey, phrases] of Object.entries(gameCommands)) {
+            const action = actionKey === 'swap_sides' ? 'swapSides' : actionKey;
+            if (Array.isArray(phrases)) {
+                phrases.forEach(phrase => { map.game[phrase] = action; });
+            }
+        }
+        return map;
     }
 
     init(actions) {
@@ -164,7 +162,7 @@ class VoiceInputManager {
                     this.actions.updateScore(playerId, 1);
                     const player = getGlobalPlayer(playerId);
                     const name = player.nickname || player.name;
-                    showToast(`Bod pro: ${name} (hlasem)`, 'success');
+                    showToast(t('voice.score_for', { name }), 'success');
                     return true;
                 }
             }
@@ -181,7 +179,7 @@ class VoiceInputManager {
                     const teamSide = side1Ids.includes(playerId) ? 1 : (side2Ids.includes(playerId) ? 2 : null);
                     this.actions.setFirstServer(playerId, teamSide);
                     const player = getGlobalPlayer(playerId);
-                    showToast(`První podání: ${player.name} (hlasem)`, 'success');
+                    showToast(t('voice.first_serve', { name: player.name }), 'success');
                     return true;
                 }
             }
@@ -196,21 +194,21 @@ class VoiceInputManager {
             case 'undo':
                 if (this.actions.undoLastPoint) {
                     this.actions.undoLastPoint();
-                    showToast('Akce vrácena (hlasem)', 'info');
-                    speak('Opravuji', state.settings.voiceInputEnabled);
+                    showToast(t('voice.undo_toast'), 'info');
+                    speak(t('voice.undo_speak'), state.settings.voiceInputEnabled);
                 }
                 break;
             case 'swapSides':
                 if (this.actions.swapSides) {
                     this.actions.swapSides();
-                    showToast('Výměna stran (hlasem)', 'info');
-                    speak('MÄ›nĂ­m strany', state.settings.voiceInputEnabled);
+                    showToast(t('voice.swap_toast'), 'info');
+                    speak(t('voice.swap_speak'), state.settings.voiceInputEnabled);
                 }
                 break;
             case 'suspend':
                 if (this.actions.suspendMatch) {
                     this.actions.suspendMatch();
-                    showToast('Zápas přerušen (hlasem)', 'info');
+                    showToast(t('voice.suspended_toast'), 'info');
                 }
                 break;
         }
@@ -239,7 +237,7 @@ class VoiceInputManager {
         if (event.error === 'not-allowed') {
             this.stop();
             state.settings.voiceInputEnabled = false; // Vynutíme vypnutí v nastavení
-            showToast('Přístup k mikrofonu odepřen', 'error');
+            showToast(t('voice.mic_denied'), 'error');
             // Zde bychom ideálně měli aktualizovat i UI tlačítko, ale to se překreslí při dalším renderu
             // nebo musíme vyvolat překreslení. Pro teď stačí toast.
         }
@@ -261,7 +259,7 @@ class VoiceInputManager {
 
     start() {
         if (!this.recognition) {
-            showToast('Hlasové ovládání není podporováno', 'error');
+            showToast(t('voice.not_supported'), 'error');
             return;
         }
         if (this.isListening) return;
@@ -270,7 +268,7 @@ class VoiceInputManager {
         try {
             this.recognition.start();
             this.isListening = true;
-            showToast('Hlasové ovládání aktivní', 'info');
+            showToast(t('voice.active'), 'info');
         } catch (e) {
             console.error('VoiceInput start error', e);
             this.isListening = false;
@@ -299,7 +297,7 @@ class VoiceInputManager {
         try {
             this.recognition.stop();
         } catch(e) { /* ignore */ }
-        if (wasListening) showToast('Hlasové ovládání vypnuto', 'info');
+        if (wasListening) showToast(t('voice.disabled'), 'info');
     }
 
     toggle() {
