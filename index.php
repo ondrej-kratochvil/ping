@@ -77,6 +77,7 @@ header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
+            darkMode: ['selector', '[data-theme="dark"]'],
             corePlugins: {
                 preflight: true,
             }
@@ -132,7 +133,7 @@ header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
         window.TESTING_MODE = window.location.search.includes('test=true');
     </script>
 </head>
-<body class="text-gray-800">
+<body>
 <?php
 define('APP_ID', (int)($_ENV['SENSIO_APP_ID'] ?? getenv('SENSIO_APP_ID') ?: 0));
 require_once $_sensioAuthPath . '/header.php';
@@ -155,33 +156,33 @@ require_once $_sensioAuthPath . '/header.php';
                             <label for="sound-toggle" class="cursor-pointer flex items-center justify-between">
                                 <span class="flex items-center"><i class="fa-solid fa-volume-high w-6 mr-2"></i>Zvuky</span>
                                 <input type="checkbox" id="sound-toggle" data-action="toggle-sound" class="sr-only">
-                                <div class="relative w-10 h-5 bg-gray-300 rounded-full transition-colors toggle-checkbox">
-                                    <div class="absolute left-0 top-0 w-5 h-5 bg-white rounded-full shadow transform transition-transform toggle-label"></div>
+                                <div class="relative w-10 h-5 bg-gray-300 dark:bg-gray-600 rounded-full transition-colors toggle-checkbox">
+                                    <div class="absolute left-0 top-0 w-5 h-5 bg-white dark:bg-gray-200 rounded-full shadow transform transition-transform toggle-label"></div>
                                 </div>
                             </label>
                             <label for="voice-assist-toggle" class="cursor-pointer flex items-center justify-between">
                                 <span class="flex items-center"><i class="fa-solid fa-comment-dots w-6 mr-2"></i>Hlas</span>
                                 <input type="checkbox" id="voice-assist-toggle" data-action="toggle-voice-assist" class="sr-only">
-                                <div class="relative w-10 h-5 bg-gray-300 rounded-full transition-colors toggle-checkbox">
-                                    <div class="absolute left-0 top-0 w-5 h-5 bg-white rounded-full shadow transform transition-transform toggle-label"></div>
+                                <div class="relative w-10 h-5 bg-gray-300 dark:bg-gray-600 rounded-full transition-colors toggle-checkbox">
+                                    <div class="absolute left-0 top-0 w-5 h-5 bg-white dark:bg-gray-200 rounded-full shadow transform transition-transform toggle-label"></div>
                                 </div>
                             </label>
                             <label class="cursor-pointer flex flex-col gap-2">
-                                <span class="flex items-center text-sm text-gray-700"><i class="fa-solid fa-volume-low w-6 mr-2"></i>Hlasitost asistenta</span>
+                                <span class="flex items-center text-sm text-muted"><i class="fa-solid fa-volume-low w-6 mr-2"></i>Hlasitost asistenta</span>
                                 <input type="range" min="0" max="1" step="0.1" value="1" data-action="change-voice-volume" class="w-full">
                             </label>
                             <label for="motivational-phrases-toggle" class="cursor-pointer flex items-center justify-between">
                                 <span class="flex items-center"><i class="fa-solid fa-comments w-6 mr-2"></i>Motivační hlášky</span>
                                 <input type="checkbox" id="motivational-phrases-toggle" data-action="toggle-motivational-phrases" class="sr-only">
-                                <div class="relative w-10 h-5 bg-gray-300 rounded-full transition-colors toggle-checkbox">
-                                    <div class="absolute left-0 top-0 w-5 h-5 bg-white rounded-full shadow transform transition-transform toggle-label"></div>
+                                <div class="relative w-10 h-5 bg-gray-300 dark:bg-gray-600 rounded-full transition-colors toggle-checkbox">
+                                    <div class="absolute left-0 top-0 w-5 h-5 bg-white dark:bg-gray-200 rounded-full shadow transform transition-transform toggle-label"></div>
                                 </div>
                             </label>
                             <label for="show-locked-toggle" class="cursor-pointer flex items-center justify-between">
                                 <span class="flex items-center"><i class="fa-solid fa-lock w-6 mr-2"></i>Zobrazit zamčené turnaje</span>
                                 <input type="checkbox" id="show-locked-toggle" data-action="toggle-show-locked" class="sr-only">
-                                <div class="relative w-10 h-5 bg-gray-300 rounded-full transition-colors toggle-checkbox">
-                                    <div class="absolute left-0 top-0 w-5 h-5 bg-white rounded-full shadow transform transition-transform toggle-label"></div>
+                                <div class="relative w-10 h-5 bg-gray-300 dark:bg-gray-600 rounded-full transition-colors toggle-checkbox">
+                                    <div class="absolute left-0 top-0 w-5 h-5 bg-white dark:bg-gray-200 rounded-full shadow transform transition-transform toggle-label"></div>
                                 </div>
                             </label>
                         </div>
@@ -192,34 +193,34 @@ require_once $_sensioAuthPath . '/header.php';
         </div>
 
         <div id="player-db-screen" class="screen space-y-6">
-             <header><h1 class="text-3xl font-bold">Databáze hráčů</h1><p class="text-gray-500">Zde spravujete centrální seznam všech hráčů.</p></header>
+             <header><h1 class="text-3xl font-bold">Databáze hráčů</h1><p class="text-muted">Zde spravujete centrální seznam všech hráčů.</p></header>
             <div class="flex gap-2"><button data-action="show-edit-player-modal" data-id="new" class="btn btn-primary w-full"><i class="fa-solid fa-plus mr-2"></i>Přidat nového hráče</button><button data-action="back-to-main" class="btn btn-secondary w-full">Zpět</button></div>
             <main id="player-db-list-container" class="space-y-2"></main>
         </div>
         <div id="tournament-screen" class="screen space-y-6">
-            <header><div id="tournament-title" class="text-3xl font-bold"></div><p id="tournament-progress" class="text-gray-500"></p></header>
+            <header><div id="tournament-title" class="text-3xl font-bold"></div><p id="tournament-progress" class="text-muted"></p></header>
             <div class="flex items-center gap-2 flex-wrap"><button data-action="back-to-main" class="btn btn-secondary flex items-center justify-center gap-2"><i class="fa-solid fa-list-ul"></i> Turnaje</button><button data-action="show-stats" class="btn btn-secondary flex items-center justify-center gap-2"><i class="fa-solid fa-chart-simple"></i> Statistiky</button><button data-action="show-settings-modal" class="btn btn-secondary flex items-center justify-center gap-2 md:ml-auto"><i class="fa-solid fa-gear"></i> Nastavení</button></div>
             <main class="space-y-6"><div id="final-results-container"></div><div id="upcoming-matches-container"></div><div id="completed-matches-container"></div></main>
         </div>
         <div id="game-screen" class="screen"></div>
         <div id="stats-screen" class="screen space-y-6">
-            <header><h1 class="text-3xl font-bold">Výsledková listina</h1><p id="stats-tournament-name" class="text-gray-500"></p></header>
+            <header><h1 class="text-3xl font-bold">Výsledková listina</h1><p id="stats-tournament-name" class="text-muted"></p></header>
             <div class="flex gap-2">
                 <button data-action="back-to-tournament" class="btn btn-secondary flex-1">Zpět</button>
                 <button data-action="export-csv" class="btn btn-primary flex-1"><i class="fa-solid fa-file-csv"></i> Export CSV</button>
                 <button data-action="export-pdf" class="btn btn-primary flex-1"><i class="fa-solid fa-file-pdf"></i> Export PDF</button>
             </div>
-            <div id="stats-leaderboard" class="bg-white p-4 rounded-xl shadow-sm"></div>
-            <div id="stats-team-leaderboard" class="bg-white p-4 rounded-xl shadow-sm hidden"></div>
-            <div class="space-y-2"><h2 class="text-xl font-bold">Vzájemné zápasy</h2><div id="stats-matrix" class="bg-white p-4 rounded-xl shadow-sm overflow-x-auto"></div></div>
+            <div id="stats-leaderboard" class="card p-4 rounded-xl shadow-sm"></div>
+            <div id="stats-team-leaderboard" class="card p-4 rounded-xl shadow-sm hidden"></div>
+            <div class="space-y-2"><h2 class="text-xl font-bold">Vzájemné zápasy</h2><div id="stats-matrix" class="card p-4 rounded-xl shadow-sm overflow-x-auto"></div></div>
         </div>
         <div id="overall-stats-screen" class="screen space-y-6">
             <header><h1 class="text-3xl font-bold">Celkové statistiky hráčů</h1></header>
             <button data-action="back-to-main" data-test-id="back-to-main" class="btn btn-secondary w-full">Zpět</button>
-            <div id="overall-stats-container" class="bg-white p-4 rounded-xl shadow-sm overflow-x-auto"></div>
+            <div id="overall-stats-container" class="card p-4 rounded-xl shadow-sm overflow-x-auto"></div>
         </div>
         <div id="modals-container"></div>
-        <footer class="text-center text-xs text-gray-400 py-4 mt-8 border-t border-gray-100">
+        <footer class="text-center text-xs text-muted py-4 mt-8 border-t border-subtle">
             © Sensio.cz | Verze: v<span id="app-version"></span>
         </footer>
     </div>

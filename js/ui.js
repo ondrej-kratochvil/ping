@@ -87,9 +87,9 @@ export function showAlertModal(message, title = 'Upozornění', autoClose = fals
                 <div class="modal-content space-y-4">
                     <div class="flex justify-between items-center">
                         <h2 class="text-xl font-bold">${title}</h2>
-                        <button data-action="close-alert-modal" data-test-id="close-alert-modal" class="text-gray-400 text-2xl hover:text-gray-700">&times;</button>
+                        <button data-action="close-alert-modal" data-test-id="close-alert-modal" class="text-muted text-2xl hover:opacity-70">&times;</button>
                     </div>
-                    <p class="text-gray-700">${message}</p>
+                    <p ${message}</p>
                     <div class="flex justify-end">
                         <button data-action="close-alert-modal" data-test-id="alert-modal-ok" class="btn btn-primary">OK</button>
                     </div>
@@ -128,9 +128,9 @@ export function showConfirmModal(message, title = 'Potvrzení', autoConfirm = fa
                 <div class="modal-content space-y-4">
                     <div class="flex justify-between items-center">
                         <h2 class="text-xl font-bold">${title}</h2>
-                        <button data-action="close-confirm-modal" data-test-id="close-confirm-modal" class="text-gray-400 text-2xl hover:text-gray-700">&times;</button>
+                        <button data-action="close-confirm-modal" data-test-id="close-confirm-modal" class="text-muted text-2xl hover:opacity-70">&times;</button>
                     </div>
-                    <p class="text-gray-700">${message}</p>
+                    <p ${message}</p>
                     <div class="flex gap-2 justify-end">
                         <button data-action="cancel-confirm-modal" data-test-id="confirm-modal-cancel" class="btn btn-secondary">Zrušit</button>
                         <button data-action="confirm-confirm-modal" data-test-id="confirm-modal-confirm" class="btn btn-primary">Potvrdit</button>
