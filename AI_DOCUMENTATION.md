@@ -328,13 +328,15 @@ last_sync (TIMESTAMP)
 - Vytvoří nový turnaj se stejným názvem + číslo v závorce (např. "Turnaj (2)")
 - Zkopíruje všechny hráče z původního turnaje
 - Vytvoří nové zápasy s nulovými skóre
-- Pro každý zápas nastaví `sidesSwapped: true` (prohodí strany hráčů)
+- Pro každý zápas nastaví `sidesSwapped` jako negaci hodnoty z **původního** turnaje (prohodí strany)
+- Pro čtyřhru: před vytvořením nového turnaje prohodí hráče uvnitř každého týmu v `playerIds` (A1,A2 → A2,A1), čímž se změní pořadí podání
 - Používá `createTournament` API akci, poté `updateMatch` pro každý zápas
 
 **Frontend implementace:**
 - Akce je dostupná v `allActions['copy-tournament']`
 - Zobrazuje se v nastavení turnaje a po ukončení turnaje
 - Automaticky generuje číslo kopie na základě existujících turnajů se stejným názvem
+- `sidesSwapped` se čte z `currentTournament.matches[matchOrder]` (původní turnaj), nikoli z nově vytvořeného
 
 ## 🧭 Routování (URL)
 
@@ -576,11 +578,12 @@ state.settings = {
   - `general` - Obecné hlášky vhodné kdykoliv během zápasu (např. "Pojď, draku!", "To byl úder!", "Paráda!")
   - `nearEnd` - Hlášky pro blízký konec zápasu, když jeden hráč potřebuje 1-2 body k vítězství (např. "Ještě jeden!", "Téměř tam!", "Poslední bod!")
   - `afterLoss` - Hlášky pro situaci, kdy hráč prohrál bod (pro budoucí použití)
-- Výběr hlášky: Pokud je zápas blízko konce (jeden hráč potřebuje 1-2 body), vybere se z `nearEnd`, jinak z `general`
+- Výběr hlášky: Pokud jeden hráč potřebuje právě 1 bod k vítězství **a není deuce**, vybere se z `nearEnd`, jinak z `general`
 - Přidávají se za skóre: `speechText += `, ${selectedPhrase}``
 
 **Hlášení konce zápasu:**
-- Formát: `"Konec zápasu. Vítěz ${winner.name}. ${winnerScore} : ${loserScore}"`
+- Formát: `"Konec zápasu. Vítěz je ${winnerLabel} s výsledkem ${winnerScore} ku ${loserScore}, ${randomPhrase}"`
+- Skóre se čte jako "X ku Y" (ne "X : Y"), aby TTS nečetlo čísla jako řadové číslovky
 
 **Důležité:**
 - Hlášení se provádí pouze pokud je `state.settings.voiceAssistEnabled === true`
@@ -665,6 +668,24 @@ const mysqlDate = now.getFullYear() + '-' +
 3. Ověř, že `sidesSwapped` je správně převedeno na integer (0/1)
 
 ## 🎨 Frontend funkcionality
+
+### Statistiky — sloupce a pořadí
+
+**Výsledková listina** (`templates.leaderboardTable`) i **Celkové statistiky** (`renderOverallStatsScreen`) mají stejné sloupce ve stejném pořadí:
+
+| Sloupec | Hodnota | Poznámka |
+|---------|---------|----------|
+| Z | `s.played` | Odehrané zápasy |
+| V | `s.wins` | Výhry (zelená) |
+| P | `s.losses` | Prohry (červená) |
+| R | `s.wins - s.losses` | Rozdíl, formát `+5` / `-2` (zelená/červená) |
+| Skóre | `scoreFor:scoreAgainst (±diff)` | Celkové skóre s rozdílem v závorce |
+
+**Pořadí hráčů** (dle `calculateStats` / `calculateOverallStats`): 1. výhry, 2. rozdíl skóre, 3. celkové skóre for (jen v rámci turnaje).
+
+Tabulka **Vzájemné zápasy** (`renderStatsScreen`) používá `stats.map(s => s.player)` — stejné pořadí jako leaderboard.
+
+Ikona 🏆 u dokončeného turnaje na hlavní obrazovce odkazuje přes `data-action="open-tournament-stats"` přímo na Výsledkovou listinu.
 
 ### Generování unikátních názvů turnajů
 

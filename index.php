@@ -199,7 +199,7 @@ header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
                 <button data-action="export-pdf" class="btn btn-primary flex-1"><i class="fa-solid fa-file-pdf"></i> Export PDF</button>
             </div>
             <div id="stats-leaderboard" class="bg-white p-4 rounded-xl shadow-sm"></div>
-            <div id="stats-team-leaderboard" class="bg-white p-4 rounded-xl shadow-sm"></div>
+            <div id="stats-team-leaderboard" class="bg-white p-4 rounded-xl shadow-sm hidden"></div>
             <div class="space-y-2"><h2 class="text-xl font-bold">Vzájemné zápasy</h2><div id="stats-matrix" class="bg-white p-4 rounded-xl shadow-sm overflow-x-auto"></div></div>
         </div>
         <div id="overall-stats-screen" class="screen space-y-6">

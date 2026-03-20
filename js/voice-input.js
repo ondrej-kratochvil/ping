@@ -293,12 +293,13 @@ class VoiceInputManager {
 
     stop() {
         if (!this.recognition) return;
+        const wasListening = this.isListening;
         this.isListening = false;
         if (this.restartTimer) clearTimeout(this.restartTimer);
         try {
             this.recognition.stop();
         } catch(e) { /* ignore */ }
-        showToast('Hlasové ovládání vypnuto', 'info');
+        if (wasListening) showToast('Hlasové ovládání vypnuto', 'info');
     }
 
     toggle() {
