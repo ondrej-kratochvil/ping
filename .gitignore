@@ -11,6 +11,7 @@ config/config.php
 *.code-workspace
 
 # Test/development copies
+0/
 1/
 2/
 3/

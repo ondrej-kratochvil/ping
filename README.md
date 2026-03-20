@@ -47,8 +47,9 @@ Aplikace pro správu a sledování ping pong turnajů s podporou více turnajů,
      SENSIO_APP_ID=0
      ```
 
-4. **Nainstalujte zĂˇvislosti** (pro testy)
+4. **Nainstalujte závislosti** (pro testy)
    ```bash
+   cd dev
    npm install
    ```
    SloĹľka `node_modules` je v `.gitignore` â€“ po klonovĂˇnĂ­ je tĹ™eba spustit `npm install`.
@@ -112,13 +113,18 @@ ping/
 │   ├── router.js           # URL routing (History API)
 │   └── utils/
 │       └── tournament-utils.js
-├── docs/                   # Dokumentace
 ├── migrations/             # SQL migrační skripty
-├── cypress/                # Cypress E2E testy
+├── dev/                    # Neprodukční soubory (docs, testy, skripty)
+│   ├── docs/               # Dokumentace
+│   ├── cypress/             # Cypress E2E testy
+│   ├── tests/               # Testovací soubory
+│   ├── data/                # Datové soubory
+│   ├── ping3.sql            # SQL skript pro vytvoření databáze
+│   ├── package.json         # Node.js závislosti
+│   ├── cypress.config.js    # Konfigurace Cypress
+│   └── vitest.config.js     # Konfigurace Vitest
 ├── .env.localhost          # Lokální konfigurace (NEPŘIDÁVAT DO GIT)
 ├── .env.example            # Šablona konfigurace
-├── ping3.sql               # SQL skript pro vytvoření databáze
-├── package.json            # Node.js závislosti
 └── README.md               # Tento soubor
 ```
 
@@ -126,19 +132,19 @@ ping/
 
 Všechna dokumentace je umístěna ve složce `/docs`:
 
-- **[MANUAL_TEST_SUITE.md](docs/MANUAL_TEST_SUITE.md)** - Kompletní sada manuálních testů
-- **[TESTING_SOLUTION.md](docs/TESTING_SOLUTION.md)** - Řešení problému s dynamickými `aria-ref` atributy
-- **[TESTING_HELPERS.md](docs/TESTING_HELPERS.md)** - Helper funkce pro automatizované testování
-- **[TESTING_QUICK_REFERENCE.md](docs/TESTING_QUICK_REFERENCE.md)** - Rychlý referenční průvodce pro testování
-- **[TESTING_BROWSER_TOOLS_GUIDE.md](docs/TESTING_BROWSER_TOOLS_GUIDE.md)** - Průvodce používáním Browser nástrojů
-- **[MANUAL_TESTING_GUIDE.md](docs/MANUAL_TESTING_GUIDE.md)** - Průvodce rychlým manuálním testováním
-- **[MISSING_IMPLEMENTATIONS.md](docs/MISSING_IMPLEMENTATIONS.md)** - Seznam chybějících implementací v UI
-- **[TESTING_IMPROVEMENTS.md](docs/TESTING_IMPROVEMENTS.md)** - Detailní návrhy na zlepšení testování
-- **[TEST_SWAP_SIDES.md](docs/TEST_SWAP_SIDES.md)** - Dokumentace k funkci prohození stran
-- **[ROUTING.md](docs/ROUTING.md)** - Routování a mapování URL
-- **[INSTALACE_NODEJS.md](docs/INSTALACE_NODEJS.md)** - Instalační průvodce pro Node.js
-- **[REFACTORING_PLAN.md](docs/REFACTORING_PLAN.md)** - Plán refaktoringu
-- **[STATUS_IMPLEMENTACE.md](docs/STATUS_IMPLEMENTACE.md)** - Status implementace funkcionalit
+- **[MANUAL_TEST_SUITE.md](dev/docs/MANUAL_TEST_SUITE.md)** - Kompletní sada manuálních testů
+- **[TESTING_SOLUTION.md](dev/docs/TESTING_SOLUTION.md)** - Řešení problému s dynamickými `aria-ref` atributy
+- **[TESTING_HELPERS.md](dev/docs/TESTING_HELPERS.md)** - Helper funkce pro automatizované testování
+- **[TESTING_QUICK_REFERENCE.md](dev/docs/TESTING_QUICK_REFERENCE.md)** - Rychlý referenční průvodce pro testování
+- **[TESTING_BROWSER_TOOLS_GUIDE.md](dev/docs/TESTING_BROWSER_TOOLS_GUIDE.md)** - Průvodce používáním Browser nástrojů
+- **[MANUAL_TESTING_GUIDE.md](dev/docs/MANUAL_TESTING_GUIDE.md)** - Průvodce rychlým manuálním testováním
+- **[MISSING_IMPLEMENTATIONS.md](dev/docs/MISSING_IMPLEMENTATIONS.md)** - Seznam chybějících implementací v UI
+- **[TESTING_IMPROVEMENTS.md](dev/docs/TESTING_IMPROVEMENTS.md)** - Detailní návrhy na zlepšení testování
+- **[TEST_SWAP_SIDES.md](dev/docs/TEST_SWAP_SIDES.md)** - Dokumentace k funkci prohození stran
+- **[ROUTING.md](dev/docs/ROUTING.md)** - Routování a mapování URL
+- **[INSTALACE_NODEJS.md](dev/docs/INSTALACE_NODEJS.md)** - Instalační průvodce pro Node.js
+- **[REFACTORING_PLAN.md](dev/docs/REFACTORING_PLAN.md)** - Plán refaktoringu
+- **[STATUS_IMPLEMENTACE.md](dev/docs/STATUS_IMPLEMENTACE.md)** - Status implementace funkcionalit
 
 ## 🗄️ Databáze
 
@@ -457,6 +463,7 @@ Všechny POST požadavky musí obsahovat JSON s `action` a `payload`:
 ### Spuštění testů
 
 ```bash
+cd dev
 npm install
 npm run cypress:open
 ```
