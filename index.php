@@ -1,4 +1,9 @@
 <?php
+// Auth: přesměrovat na sensio-auth login pokud není přihlášen
+$_sensioAuthPath = rtrim($_ENV['SENSIO_AUTH_PATH'] ?? getenv('SENSIO_AUTH_PATH') ?: __DIR__ . '/../sensio-auth', '/');
+require_once $_sensioAuthPath . '/gatekeeper.php';
+// $currentUser, $sessionId, $pdo nyní dostupné
+
 // Zákaz cachování
 header("Content-Type: text/html; charset=utf-8");
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?: '';
@@ -133,6 +138,7 @@ header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
                 <h1 class="text-3xl font-bold flex items-center gap-3"><i class="fa-solid fa-trophy text-yellow-400"></i>Ping pong turnaje</h1>
                 <div class="flex items-center gap-2 flex-wrap justify-end md:justify-start">
                     <button data-action="show-new-tournament-modal" data-test-id="new-tournament-button" class="btn btn-primary flex items-center gap-2"><i class="fa-solid fa-plus"></i> Nový turnaj</button>
+                    <a href="/a/sensio-auth/logout.php" class="btn btn-secondary !p-0 h-12 w-12 flex items-center justify-center text-xl" title="Odhlásit se (<?= htmlspecialchars($currentUser['full_name'] ?? $currentUser['email'] ?? '') ?>)"><i class="fa-solid fa-right-from-bracket"></i></a>
                     <div class="relative">
                         <button data-action="toggle-settings-menu" class="btn btn-secondary !p-0 h-12 w-12 flex items-center justify-center text-xl" title="Nastavení aplikace"><i class="fa-solid fa-gear"></i></button>
                         <div id="settings-menu" class="settings-menu hidden">

@@ -5,9 +5,24 @@ ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 
 header("Content-Type: application/json");
-header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Origin: http://localhost");
+header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit(0); }
+
+// Auth guard – validace sensio-auth session
+$_sensioAuthPath = rtrim($_ENV['SENSIO_AUTH_PATH'] ?? getenv('SENSIO_AUTH_PATH') ?: __DIR__ . '/../sensio-auth', '/');
+require_once $_sensioAuthPath . '/config.php';
+require_once $_sensioAuthPath . '/src/Session.php';
+
+$currentUser = validateSession($pdo, $_COOKIE[SESSION_COOKIE_NAME] ?? null);
+if ($currentUser === null) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Unauthorized']);
+    exit;
+}
 
 try {
     $config = require 'config/config.php';
@@ -17,8 +32,6 @@ try {
     echo json_encode(['error' => 'Configuration error']);
     exit();
 }
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit(0); }
 
 // Při chybějícím .env vrátíme srozumitelnou chybu (bez volání mysqli s null)
 $db = $config['db'];
