@@ -13,6 +13,7 @@ import { checkWinCondition } from './game-logic.js';
 import { initializeAudio, speak } from './audio.js';
 import { voiceInput } from './voice-input.js';
 import { initRouter, parseRoute, getPath, navigateTo, back } from './router.js';
+import { t, translateDOM } from './i18n.js';
 // APP_VERSION definujeme zde, abychom se vyhnuli problémům s cachováním constants.js
 const APP_VERSION = '1.1.3';
 
@@ -32,10 +33,10 @@ async function applyRoute(route) {
         case 'tournament':
         case 'tournament-settings':
         case 'tournament-stats': {
-            const t = getTournament(route.tournamentId);
-            if (!t) {
+            const tr = getTournament(route.tournamentId);
+            if (!tr) {
                 renderMainScreen();
-                await showAlertModal('Turnaj nebyl nalezen.', 'Chyba');
+                await showAlertModal(t('settings.tournament_not_found'), t('common.error'));
                 return;
             }
             state.activeTournamentId = route.tournamentId;
@@ -48,24 +49,24 @@ async function applyRoute(route) {
             break;
         }
         case 'match': {
-            const t = getTournament(route.tournamentId);
-            if (!t) {
+            const tr = getTournament(route.tournamentId);
+            if (!tr) {
                 renderMainScreen();
-                await showAlertModal('Turnaj nebyl nalezen.', 'Chyba');
+                await showAlertModal(t('settings.tournament_not_found'), t('common.error'));
                 return;
             }
-            const m = getMatch(t, route.matchId);
+            const m = getMatch(tr, route.matchId);
             if (!m) {
                 state.activeTournamentId = route.tournamentId;
                 renderTournamentScreen();
-                await showAlertModal('Zápas nebyl nalezen.', 'Chyba');
+                await showAlertModal(t('match.not_found'), t('common.error'));
                 return;
             }
             state.activeTournamentId = route.tournamentId;
             state.activeMatchId = String(route.matchId);
             state.scoreHistory = [];
             state.lastPointTimestamp = null;
-            const match = getMatch(t, route.matchId);
+            const match = getMatch(tr, route.matchId);
             match.score1 = match.score1 || 0;
             match.score2 = match.score2 || 0;
             if (!match.firstServer) {
@@ -95,7 +96,7 @@ async function applyRoute(route) {
             const p = state.playerDatabase.find(pl => pl.id === route.playerId);
             if (!p) {
                 renderPlayerDbScreen();
-                await showAlertModal('Hráč nebyl nalezen.', 'Chyba');
+                await showAlertModal(t('player.not_found'), t('common.error'));
                 return;
             }
             renderPlayerDbScreen();
@@ -157,7 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
             state.settings.voiceAssistEnabled = voiceToggle.checked;
             apiCall('saveSettings', { key: 'voiceAssistEnabled', value: state.settings.voiceAssistEnabled });
             if (state.settings.voiceAssistEnabled) {
-                setTimeout(() => speak("Hlasový asistent zapnut."), 100);
+                setTimeout(() => speak(t('voice.assist_on')), 100);
             }
         }
         const showLockedToggle = e.target.closest('[data-action="toggle-show-locked"]');
@@ -179,14 +180,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const newVolume = parseFloat(volumeSlider.value);
             state.settings.voiceVolume = newVolume;
             apiCall('saveSettings', { key: 'voiceVolume', value: newVolume });
-            speak(`Hlasitost ${Math.round(newVolume * 100)} procent`, true);
+            speak(t('voice.volume', { percent: Math.round(newVolume * 100) }), true);
         }
     });
 
     document.getElementById('import-file').addEventListener('change', async (event) => {
         const file = event.target.files[0];
         if (!file) return;
-        if ((state.tournaments.length > 0 || state.playerDatabase.length > 0) && !(await showConfirmModal("Opravdu chcete importovat nová data? Všechna stávající data budou přepsána.", 'Import dat'))) {
+        if ((state.tournaments.length > 0 || state.playerDatabase.length > 0) && !(await showConfirmModal(t('import.confirm'), t('import.title')))) {
             event.target.value = '';
             return;
         }
@@ -198,12 +199,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     state.tournaments = importedData.tournaments;
                     state.playerDatabase = importedData.playerDatabase;
                     state.settings = importedData.settings || { soundsEnabled: true };
-                    await showAlertModal("Import dat v databázové verzi není zatím podporován.", 'Upozornění');
+                    await showAlertModal(t('import.not_supported'), t('common.warning'));
                 } else {
                     throw new Error("Invalid data format");
                 }
             } catch (error) {
-                await showAlertModal("Chyba: Soubor je poškozený nebo má nesprávný formát.", 'Chyba');
+                await showAlertModal(t('import.invalid_format'), t('common.error'));
             }
             event.target.value = '';
         };
@@ -315,12 +316,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.key === 'ArrowRight') {
                 e.preventDefault();
                 const firstStartBtn = document.querySelector('#tournaments-list-container [data-action="open-tournament"]');
-                if (firstStartBtn && firstStartBtn.textContent.includes('Start turnaje')) {
+                if (firstStartBtn && firstStartBtn.textContent.includes(t('tournament.start'))) {
                     firstStartBtn.click();
                 }
             }
         }
     });
+
+    translateDOM();
 
     (async () => {
         await loadState();

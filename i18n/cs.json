@@ -63,7 +63,9 @@
         "no_players_yet": "Zat\u00edm \u017e\u00e1dn\u00ed hr\u00e1\u010di",
         "even_count_required": "\u010cty\u0159hra vy\u017eaduje sud\u00fd po\u010det hr\u00e1\u010d\u016f.",
         "created_toast": "Turnaj byl \u00fasp\u011b\u0161n\u011b vytvo\u0159en",
-        "player_click_placeholder": "Klikn\u011bte pro v\u00fdb\u011br hr\u00e1\u010de..."
+        "player_click_placeholder": "Klikn\u011bte pro v\u00fdb\u011br hr\u00e1\u010de...",
+        "name_required": "Zadejte n\u00e1zev turnaje.",
+        "players_label": "Hr\u00e1\u010di ({{current}}/{{max}})"
     },
     "player": {
         "count": {

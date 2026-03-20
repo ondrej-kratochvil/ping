@@ -62,7 +62,9 @@
         "no_players_yet": "No players yet",
         "even_count_required": "Doubles requires an even number of players.",
         "created_toast": "Tournament created successfully",
-        "player_click_placeholder": "Click to select a player..."
+        "player_click_placeholder": "Click to select a player...",
+        "name_required": "Please enter a tournament name.",
+        "players_label": "Players ({{current}}/{{max}})"
     },
     "player": {
         "count": {

@@ -1,5 +1,6 @@
 // Akce aplikace (allActions) – přesunuto z index.html
 
+import { t as tr } from './i18n.js';
 import { state } from './state.js';
 import { voiceInput } from './voice-input.js';
 import { TOURNAMENT_TYPES, playerColors, encouragingPhrases, winningPhrases } from './constants.js';
@@ -194,36 +195,36 @@ export const allActions = {
             <div id="edit-player-modal" class="modal-backdrop">
                 <div class="modal-content space-y-4">
                     <div class="flex justify-between items-center">
-                        <h2 class="text-xl font-bold">${playerId?'Upravit hráče':'Nový hráč'}</h2>
+                        <h2 class="text-xl font-bold">${playerId?tr('player.edit_title'):tr('player.new')}</h2>
                         <button data-action="close-modal" class="text-muted text-2xl hover:opacity-70">&times;</button>
                     </div>
                     <div class="text-center">
                         <img src="${p.photoUrl||`data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%2280%22%20height%3D%2280%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%2280%22%20height%3D%2280%22%20fill%3D%22%23e5e7eb%22%20rx%3D%2240%22%2F%3E${p.name?`%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20dominant-baseline%3D%22central%22%20text-anchor%3D%22middle%22%20font-family%3D%22Inter%22%20font-size%3D%2232%22%20fill%3D%22%239ca3af%22%3E${p.name.charAt(0).toUpperCase()}%3C%2Ftext%3E`:''}%3C%2Fsvg%3E`}" class="w-20 h-20 rounded-full object-cover bg-gray-200 dark:bg-gray-600 inline-block">
                     </div>
                     <div>
-                        <label for="player-name" class="text-sm font-medium">Jméno</label>
+                        <label for="player-name" class="text-sm font-medium">${tr('player.name')}</label>
                         <input id="player-name" value="${p.name}" class="w-full mt-1 p-2 border rounded-md">
                     </div>
                     <div>
-                        <label for="player-nickname" class="text-sm font-medium">Přezdívka (pro hlasové ovládání)</label>
-                        <input id="player-nickname" value="${p.nickname||''}" placeholder="Např. Marťas" class="w-full mt-1 p-2 border rounded-md">
-                        <p class="text-xs text-muted mt-1">Použije se pro hlasové povely. Pokud je prázdná, použije se jméno.</p>
+                        <label for="player-nickname" class="text-sm font-medium">${tr('player.nickname')}</label>
+                        <input id="player-nickname" value="${p.nickname||''}" placeholder="${tr('player.nickname_placeholder')}" class="w-full mt-1 p-2 border rounded-md">
+                        <p class="text-xs text-muted mt-1">${tr('player.nickname_hint')}</p>
                     </div>
                     <div>
-                        <label for="player-photo" class="text-sm font-medium">URL fotografie</label>
+                        <label for="player-photo" class="text-sm font-medium">${tr('player.photo_url')}</label>
                         <input id="player-photo" value="${p.photoUrl||''}" placeholder="https://..." class="w-full mt-1 p-2 border rounded-md">
                     </div>
                     <div>
-                        <label for="player-strengths" class="text-sm font-medium">Silné stránky</label>
+                        <label for="player-strengths" class="text-sm font-medium">${tr('player.strengths')}</label>
                         <textarea id="player-strengths" class="w-full mt-1 p-2 border rounded-md h-20">${p.strengths||''}</textarea>
                     </div>
                     <div>
-                        <label for="player-weaknesses" class="text-sm font-medium">Slabé stránky</label>
+                        <label for="player-weaknesses" class="text-sm font-medium">${tr('player.weaknesses')}</label>
                         <textarea id="player-weaknesses" class="w-full mt-1 p-2 border rounded-md h-20">${p.weaknesses||''}</textarea>
                     </div>
                     <div class="flex gap-2">
-                        <button data-action="close-modal" class="btn btn-secondary w-full">Zrušit</button>
-                        <button data-action="save-player" data-id="${playerId||''}" class="btn btn-primary w-full">Uložit</button>
+                        <button data-action="close-modal" class="btn btn-secondary w-full">${tr('common.cancel')}</button>
+                        <button data-action="save-player" data-id="${playerId||''}" class="btn btn-primary w-full">${tr('common.save')}</button>
                     </div>
                 </div>
             </div>
@@ -234,7 +235,7 @@ export const allActions = {
     'save-player': async (target) => {
         const playerId = target.dataset.id ? parseInt(target.dataset.id) : null;
         const name = document.getElementById('player-name').value.trim();
-        if (!name) { await showAlertModal('Jméno je povinné.', 'Chyba'); return; }
+        if (!name) { await showAlertModal(tr('player.name_required'), tr('common.error')); return; }
         const payload = {
             id: playerId,
             data: {
@@ -253,34 +254,34 @@ export const allActions = {
     'delete-player': async (target) => {
         const playerId = parseInt(target.dataset.id);
         const isPlayerInTournament = state.tournaments.some(t => t.playerIds.includes(playerId));
-        if (isPlayerInTournament) { await showAlertModal('Hráče nelze smazat, protože je součástí jednoho nebo více turnajů.', 'Chyba'); return; }
-        if (await showConfirmModal('Opravdu chcete smazat tohoto hráče z databáze?', 'Smazat hráče')) {
+        if (isPlayerInTournament) { await showAlertModal(tr('player.cannot_delete'), tr('common.error')); return; }
+        if (await showConfirmModal(tr('player.confirm_delete'), tr('player.confirm_delete_title'))) {
             const result = await apiCall('deletePlayer', { id: playerId });
             if (!result?.ok) return;
             navigateTo({ name: 'players' });
         }
     },
     'show-new-tournament-modal': () => navigateTo({ name: 'tournament-new' }),
-    '_show-new-tournament-modal-inner': () => { tempPlayerIds=[];tempTournamentType=TOURNAMENT_TYPES.SINGLE;const defaultName = `Turnaj ${new Date().toLocaleDateString('cs-CZ')}`; const renderAddedPlayers=()=>{const list=document.getElementById('new-players-list');if(list){list.innerHTML=tempPlayerIds.map((id,index)=>{const player=getGlobalPlayer(id);return`<div class="flex items-center gap-2 surface-alt p-2 rounded-md"><div class="w-5 h-5 rounded-full ${playerColors[index%playerColors.length]}"></div><span class="flex-grow">${player.name}</span><button data-action="remove-temp-player" data-id="${id}" data-test-id="remove-player-${id}" class="text-red-500 font-bold">&times;</button></div>`}).join('')||`<div class="text-sm text-muted text-center p-2">Zatím žádní hráči</div>`;}const countLabel=document.getElementById('player-count-text');if(countLabel){countLabel.textContent=`Hráči (${tempPlayerIds.length}/${getPlayerLimitForType(tempTournamentType)})`;const note=document.getElementById('player-count-note');if(note){note.textContent=tempTournamentType===TOURNAMENT_TYPES.DOUBLE&&tempPlayerIds.length%2!==0?'Čtyřhra vyžaduje sudý počet hráčů.':'';}}};const renderTypeToggle=()=>{document.querySelectorAll('[data-tournament-type]').forEach(btn=>{const isActive=btn.dataset.tournamentType===tempTournamentType;btn.classList.toggle('bg-blue-500',isActive);btn.classList.toggle('text-white',isActive);btn.classList.toggle('border-blue-500',isActive);btn.classList.toggle('surface-alt',!isActive);btn.classList.toggle('text-muted',!isActive);});const hint=document.getElementById('tournament-type-hint');if(hint){hint.textContent=tempTournamentType===TOURNAMENT_TYPES.DOUBLE?'Čtyřhra vyžaduje 4–16 hráčů a sudý počet (týmy po dvou).':'Dvouhra vyžaduje 2–8 hráčů.';}};openModal(`<div id="new-tournament-modal" class="modal-backdrop" data-test-id="new-tournament-modal"><div class="modal-content space-y-4"><div class="flex justify-between items-center"><h2 class="text-xl font-bold">Nový turnaj</h2><button data-action="close-modal" data-test-id="close-new-tournament-modal" class="text-muted text-2xl hover:opacity-70">&times;</button></div><div><label for="new-tournament-name" class="text-sm font-medium">Název turnaje</label><input id="new-tournament-name" data-test-id="tournament-name-input" type="text" value="${defaultName}" class="w-full mt-1 p-2 border rounded-md"></div><div><span class="text-sm font-medium">Typ zápasu</span><div class="flex gap-2 mt-1"><button type="button" data-tournament-type="single" data-test-id="tournament-type-single" class="flex-1 p-3 border rounded-md text-center">Dvouhra</button><button type="button" data-tournament-type="double" data-test-id="tournament-type-double" class="flex-1 p-3 border rounded-md text-center">Čtyřhra</button></div><p class="text-xs text-muted mt-1" id="tournament-type-hint"></p></div><div><label for="add-player-input" id="player-count-text" class="text-sm font-medium">Hráči (0/${getPlayerLimitForType(tempTournamentType)})</label><div id="new-players-list" class="space-y-2 my-2">${tempPlayerIds.length>0?'':'<div class="text-sm text-muted text-center p-2">Zatím žádní hráči</div>'}</div><p id="player-count-note" class="text-xs text-red-500"></p><div class="relative"><input id="add-player-input" data-test-id="add-player-input" type="text" placeholder="Klikněte pro výběr hráče..." class="w-full p-2 border rounded-md"><div id="autocomplete-container"></div></div></div><div><span class="text-sm font-medium">Typ setu</span><div class="flex gap-2 mt-1"> <label class="flex-1 p-3 border rounded-md cursor-pointer has-[:checked]:bg-blue-50 has-[:checked]:border-blue-500 text-center"><input type="radio" name="points-to-win" value="11" data-test-id="points-to-win-11" class="sr-only" checked><span>Malý set (11)</span></label> <label class="flex-1 p-3 border rounded-md cursor-pointer has-[:checked]:bg-blue-50 has-[:checked]:border-blue-500 text-center"><input type="radio" name="points-to-win" value="21" data-test-id="points-to-win-21" class="sr-only"><span>Velký set (21)</span></label></div></div><button data-action="create-tournament" data-test-id="create-tournament-button" class="btn btn-primary w-full">Vytvořit turnaj</button></div></div>`);let showSuggestionsFn=null;showSuggestionsFn=setupAutocomplete('add-player-input','autocomplete-container',async (id)=>{const maxPlayers=getPlayerLimitForType(tempTournamentType);if(tempPlayerIds.length<maxPlayers&&!tempPlayerIds.includes(id)){tempPlayerIds.push(id);renderAddedPlayers();}else if(tempPlayerIds.includes(id)){await showAlertModal('Hráč je již v seznamu.', 'Upozornění');}else{await showAlertModal(`Maximální počet hráčů pro tento formát je ${maxPlayers}.`, 'Upozornění');}},tempPlayerIds,{getMinPlayers:()=>getMinPlayersForType(tempTournamentType),getCurrentIds:()=>tempPlayerIds,onPlayerAdded:()=>renderAddedPlayers()});document.querySelectorAll('[data-tournament-type]').forEach(btn=>{btn.addEventListener('click',async ()=>{const selectedType=btn.dataset.tournamentType;const maxPlayers=getPlayerLimitForType(selectedType);if(tempPlayerIds.length>maxPlayers){await showAlertModal(`Pro tento formát je povoleno maximálně ${maxPlayers} hráčů. Nejprve hráče odeberte.`, 'Upozornění');return;}tempTournamentType=selectedType;const newMinPlayers=getMinPlayersForType(tempTournamentType);renderTypeToggle();renderAddedPlayers();if(tempPlayerIds.length<newMinPlayers&&showSuggestionsFn){setTimeout(()=>showSuggestionsFn(),100);}});});renderTypeToggle();renderAddedPlayers();document.getElementById('new-tournament-modal').addEventListener('keydown', (e)=>{ if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); document.querySelector('[data-action="create-tournament"]').click(); } });},
-    'remove-temp-player':(target)=>{const idToRemove=parseInt(target.dataset.id);tempPlayerIds=tempPlayerIds.filter(id=>id!==idToRemove);const list=document.getElementById('new-players-list');if(list){list.innerHTML=tempPlayerIds.map((id,index)=>{const player=getGlobalPlayer(id);return`<div class="flex items-center gap-2 surface-alt p-2 rounded-md"><div class="w-5 h-5 rounded-full ${playerColors[index%playerColors.length]}"></div><span class="flex-grow">${player.name}</span><button data-action="remove-temp-player" data-id="${id}" class="text-red-500 font-bold">&times;</button></div>`}).join('')||`<div class="text-sm text-muted text-center p-2">Zatím žádní hráči</div>`;const countLabel=document.getElementById('player-count-text');if(countLabel){countLabel.textContent=`Hráči (${tempPlayerIds.length}/${getPlayerLimitForType(tempTournamentType)})`;const note=document.getElementById('player-count-note');if(note){note.textContent=tempTournamentType===TOURNAMENT_TYPES.DOUBLE&&tempPlayerIds.length%2!==0?'Čtyřhra vyžaduje sudý počet hráčů.':'';}}}},
+    '_show-new-tournament-modal-inner': () => { tempPlayerIds=[];tempTournamentType=TOURNAMENT_TYPES.SINGLE;const defaultName = `Turnaj ${new Date().toLocaleDateString('cs-CZ')}`; const renderAddedPlayers=()=>{const list=document.getElementById('new-players-list');if(list){list.innerHTML=tempPlayerIds.map((id,index)=>{const player=getGlobalPlayer(id);return`<div class="flex items-center gap-2 surface-alt p-2 rounded-md"><div class="w-5 h-5 rounded-full ${playerColors[index%playerColors.length]}"></div><span class="flex-grow">${player.name}</span><button data-action="remove-temp-player" data-id="${id}" data-test-id="remove-player-${id}" class="text-red-500 font-bold">&times;</button></div>`}).join('')||`<div class="text-sm text-muted text-center p-2">${tr('tournament_new.no_players_yet')}</div>`;}const countLabel=document.getElementById('player-count-text');if(countLabel){countLabel.textContent=tr('tournament_new.players_label', { current: tempPlayerIds.length, max: getPlayerLimitForType(tempTournamentType) });const note=document.getElementById('player-count-note');if(note){note.textContent=tempTournamentType===TOURNAMENT_TYPES.DOUBLE&&tempPlayerIds.length%2!==0?tr('tournament_new.even_count_required'):'';}}};const renderTypeToggle=()=>{document.querySelectorAll('[data-tournament-type]').forEach(btn=>{const isActive=btn.dataset.tournamentType===tempTournamentType;btn.classList.toggle('bg-blue-500',isActive);btn.classList.toggle('text-white',isActive);btn.classList.toggle('border-blue-500',isActive);btn.classList.toggle('surface-alt',!isActive);btn.classList.toggle('text-muted',!isActive);});const hint=document.getElementById('tournament-type-hint');if(hint){hint.textContent=tempTournamentType===TOURNAMENT_TYPES.DOUBLE?tr('tournament_new.type_double_hint'):tr('tournament_new.type_single_hint');}};openModal(`<div id="new-tournament-modal" class="modal-backdrop" data-test-id="new-tournament-modal"><div class="modal-content space-y-4"><div class="flex justify-between items-center"><h2 class="text-xl font-bold">${tr('tournament_new.title')}</h2><button data-action="close-modal" data-test-id="close-new-tournament-modal" class="text-muted text-2xl hover:opacity-70">&times;</button></div><div><label for="new-tournament-name" class="text-sm font-medium">${tr('tournament_new.name_label')}</label><input id="new-tournament-name" data-test-id="tournament-name-input" type="text" value="${defaultName}" class="w-full mt-1 p-2 border rounded-md"></div><div><span class="text-sm font-medium">${tr('tournament_new.type_label')}</span><div class="flex gap-2 mt-1"><button type="button" data-tournament-type="single" data-test-id="tournament-type-single" class="flex-1 p-3 border rounded-md text-center">${tr('tournament_new.type_single')}</button><button type="button" data-tournament-type="double" data-test-id="tournament-type-double" class="flex-1 p-3 border rounded-md text-center">${tr('tournament_new.type_double')}</button></div><p class="text-xs text-muted mt-1" id="tournament-type-hint"></p></div><div><label for="add-player-input" id="player-count-text" class="text-sm font-medium">${tr('tournament_new.players_label', { current: 0, max: getPlayerLimitForType(tempTournamentType) })}</label><div id="new-players-list" class="space-y-2 my-2">${tempPlayerIds.length>0?'':`<div class="text-sm text-muted text-center p-2">${tr('tournament_new.no_players_yet')}</div>`}</div><p id="player-count-note" class="text-xs text-red-500"></p><div class="relative"><input id="add-player-input" data-test-id="add-player-input" type="text" placeholder="${tr('tournament_new.player_click_placeholder')}" class="w-full p-2 border rounded-md"><div id="autocomplete-container"></div></div></div><div><span class="text-sm font-medium">${tr('tournament_new.set_label')}</span><div class="flex gap-2 mt-1"> <label class="flex-1 p-3 border rounded-md cursor-pointer has-[:checked]:bg-blue-50 has-[:checked]:border-blue-500 text-center"><input type="radio" name="points-to-win" value="11" data-test-id="points-to-win-11" class="sr-only" checked><span>${tr('tournament_new.set_small')}</span></label> <label class="flex-1 p-3 border rounded-md cursor-pointer has-[:checked]:bg-blue-50 has-[:checked]:border-blue-500 text-center"><input type="radio" name="points-to-win" value="21" data-test-id="points-to-win-21" class="sr-only"><span>${tr('tournament_new.set_large')}</span></label></div></div><button data-action="create-tournament" data-test-id="create-tournament-button" class="btn btn-primary w-full">${tr('tournament_new.create')}</button></div></div>`);let showSuggestionsFn=null;showSuggestionsFn=setupAutocomplete('add-player-input','autocomplete-container',async (id)=>{const maxPlayers=getPlayerLimitForType(tempTournamentType);if(tempPlayerIds.length<maxPlayers&&!tempPlayerIds.includes(id)){tempPlayerIds.push(id);renderAddedPlayers();}else if(tempPlayerIds.includes(id)){await showAlertModal(tr('common.player_already_in_list'), tr('common.warning'));}else{await showAlertModal(tr('common.max_players_reached', { max: maxPlayers }), tr('common.warning'));}},tempPlayerIds,{getMinPlayers:()=>getMinPlayersForType(tempTournamentType),getCurrentIds:()=>tempPlayerIds,onPlayerAdded:()=>renderAddedPlayers()});document.querySelectorAll('[data-tournament-type]').forEach(btn=>{btn.addEventListener('click',async ()=>{const selectedType=btn.dataset.tournamentType;const maxPlayers=getPlayerLimitForType(selectedType);if(tempPlayerIds.length>maxPlayers){await showAlertModal(tr('common.type_change_too_many', { max: maxPlayers }), tr('common.warning'));return;}tempTournamentType=selectedType;const newMinPlayers=getMinPlayersForType(tempTournamentType);renderTypeToggle();renderAddedPlayers();if(tempPlayerIds.length<newMinPlayers&&showSuggestionsFn){setTimeout(()=>showSuggestionsFn(),100);}});});renderTypeToggle();renderAddedPlayers();document.getElementById('new-tournament-modal').addEventListener('keydown', (e)=>{ if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); document.querySelector('[data-action="create-tournament"]').click(); } });},
+    'remove-temp-player':(target)=>{const idToRemove=parseInt(target.dataset.id);tempPlayerIds=tempPlayerIds.filter(id=>id!==idToRemove);const list=document.getElementById('new-players-list');if(list){list.innerHTML=tempPlayerIds.map((id,index)=>{const player=getGlobalPlayer(id);return`<div class="flex items-center gap-2 surface-alt p-2 rounded-md"><div class="w-5 h-5 rounded-full ${playerColors[index%playerColors.length]}"></div><span class="flex-grow">${player.name}</span><button data-action="remove-temp-player" data-id="${id}" class="text-red-500 font-bold">&times;</button></div>`}).join('')||`<div class="text-sm text-muted text-center p-2">${tr('tournament_new.no_players_yet')}</div>`;const countLabel=document.getElementById('player-count-text');if(countLabel){countLabel.textContent=tr('tournament_new.players_label', { current: tempPlayerIds.length, max: getPlayerLimitForType(tempTournamentType) });const note=document.getElementById('player-count-note');if(note){note.textContent=tempTournamentType===TOURNAMENT_TYPES.DOUBLE&&tempPlayerIds.length%2!==0?tr('tournament_new.even_count_required'):'';}}}},
     'create-tournament': async () => {
         const name = document.getElementById('new-tournament-name').value.trim();
         const minPlayers = getMinPlayersForType(tempTournamentType);
         const maxPlayers = getPlayerLimitForType(tempTournamentType);
         if (!name) {
-            await showAlertModal('Zadejte název turnaje.', 'Chyba');
+            await showAlertModal(tr('tournament_new.name_required'), tr('common.error'));
             return;
         }
         if (tempPlayerIds.length < minPlayers) {
-            await showAlertModal(`Pro tento formát je potřeba alespoň ${minPlayers} hráčů.`, 'Chyba');
+            await showAlertModal(tr('common.min_players_error', { min: minPlayers }), tr('common.error'));
             return;
         }
         if (tempTournamentType === TOURNAMENT_TYPES.DOUBLE && tempPlayerIds.length % 2 !== 0) {
-            await showAlertModal('Čtyřhra vyžaduje sudý počet hráčů.', 'Chyba');
+            await showAlertModal(tr('tournament_new.even_count_required'), tr('common.error'));
             return;
         }
         if (tempPlayerIds.length > maxPlayers) {
-            await showAlertModal(`Maximální počet hráčů je ${maxPlayers}.`, 'Chyba');
+            await showAlertModal(tr('common.max_players_error', { max: maxPlayers }), tr('common.error'));
             return;
         }
         const existingNames = state.tournaments.map(t => t.name);
@@ -303,18 +304,18 @@ export const allActions = {
         if (!result?.ok) return;
         closeModal();
         navigateTo({ name: 'main' });
-        showToast('Turnaj byl úspěšně vytvořen', 'success');
+        showToast(tr('tournament_new.created_toast'), 'success');
     },
     'show-settings-modal': async () => {
         const t = getTournament();
         if (!t) {
-            await showAlertModal('Turnaj nebyl nalezen.', 'Chyba');
+            await showAlertModal(tr('settings.tournament_not_found'), tr('common.error'));
             return;
         }
         navigateTo({ name: 'tournament-settings', tournamentId: t.id });
     },
-    '_show-settings-modal-inner': () => { const t = getTournament();const maxPlayersForTournament=getPlayerLimitForType(t.type||TOURNAMENT_TYPES.SINGLE);const matchIncludesPlayer=(match,playerId)=>{return getSidePlayerIds(t,match,1).includes(playerId)||getSidePlayerIds(t,match,2).includes(playerId);};tempPlayerIds=[...t.playerIds];const renderAddedPlayers=()=>{const list=document.getElementById('settings-players-list');if(list){list.innerHTML=tempPlayerIds.map((id,index)=>{const player=getGlobalPlayer(id);const hasActivity=t.matches.some(m=>(m.completed||m.score1>0||m.score2>0)&&matchIncludesPlayer(m,id));return`<div class="flex items-center gap-2 surface-alt p-2 rounded-md"><div class="w-6 h-6 ${playerColors[index%playerColors.length]} rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">${player.name.charAt(0).toUpperCase()}</div><span class="flex-grow">${player.name}</span><button data-action="remove-player-settings" data-id="${id}" class="text-red-500 font-bold text-xl disabled:opacity-25" ${hasActivity?'disabled title="Hráč již má odehraný nebo rozehraný zápas"':''}>&times;</button></div>`}).join('')||`<div class="text-sm text-muted text-center p-2">Žádní hráči</div>`;document.getElementById('settings-player-count').textContent=`Hráči (${tempPlayerIds.length}/${maxPlayersForTournament})`;}};openModal(`<div id="settings-modal" class="modal-backdrop"><div class="modal-content space-y-4"><div class="flex justify-between items-center"><h2 class="text-xl font-bold">Nastavení turnaje</h2><button data-action="close-modal" class="text-muted text-2xl hover:opacity-70">&times;</button></div><p class="text-sm text-muted">Formát: ${getTournamentTypeLabel(t)}</p><div><label for="edit-tournament-name" class="text-sm font-medium">Název turnaje</label><input id="edit-tournament-name" value="${t.name}" class="w-full mt-1 p-2 border rounded-md" ${t.isLocked?'disabled':''}></div><div><label for="add-player-input-settings" id="settings-player-count" class="text-sm font-medium">Hráči</label><div id="settings-players-list" class="space-y-2 my-2"></div><div class="relative"${t.isLocked?'hidden':''}><input id="add-player-input-settings" type="text" placeholder="Klikněte pro přidání hráče..." class="w-full p-2 border rounded-md"><div id="autocomplete-container-settings"></div></div></div><button data-action="save-settings" class="btn btn-primary w-full">Uložit změny</button><div class="border-t pt-4 mt-4 space-y-2"><span class="text-sm font-medium text-muted">Servisní akce</span><div class="flex gap-2 flex-wrap"><button data-action="copy-tournament" class="btn btn-secondary w-full text-sm"><i class="fa-solid fa-copy"></i> Kopírovat turnaj</button><button data-action="toggle-lock-settings" class="btn btn-secondary w-full text-sm">${t.isLocked?'🔓 Odemknout':'🔒 Zamknout'}</button><button data-action="delete-tournament-settings" class="btn btn-danger w-full text-sm">Smazat turnaj</button></div></div></div></div>`);renderAddedPlayers();setupAutocomplete('add-player-input-settings','autocomplete-container-settings',(id)=>{if(tempPlayerIds.length<maxPlayersForTournament&&!tempPlayerIds.includes(id)){tempPlayerIds.push(id);renderAddedPlayers();}},tempPlayerIds,{minPlayers:0,getCurrentIds:()=>tempPlayerIds});document.getElementById('settings-modal').addEventListener('keydown',(e)=>{if(e.key==='Enter'&&e.ctrlKey){e.preventDefault();document.querySelector('[data-action="save-settings"]').click();}});},
-    'remove-player-settings':(target)=>{const idToRemove=parseInt(target.dataset.id);tempPlayerIds=tempPlayerIds.filter(id=>id!==idToRemove);const t=getTournament();const maxPlayersForTournament=getPlayerLimitForType(t.type||TOURNAMENT_TYPES.SINGLE);const matchIncludesPlayer=(match,playerId)=>{return getSidePlayerIds(t,match,1).includes(playerId)||getSidePlayerIds(t,match,2).includes(playerId);};const renderAddedPlayers=()=>{const list=document.getElementById('settings-players-list');if(list){list.innerHTML=tempPlayerIds.map((id,index)=>{const player=getGlobalPlayer(id);const hasActivity=t.matches.some(m=>(m.completed||m.score1>0||m.score2>0)&&matchIncludesPlayer(m,id));return`<div class="flex items-center gap-2 surface-alt p-2 rounded-md"><div class="w-6 h-6 ${playerColors[index%playerColors.length]} rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">${player.name.charAt(0).toUpperCase()}</div><span class="flex-grow">${player.name}</span><button data-action="remove-player-settings" data-id="${id}" class="text-red-500 font-bold text-xl disabled:opacity-25" ${hasActivity?'disabled title="Hráč již má odehraný nebo rozehraný zápas"':''}>&times;</button></div>`}).join('')||`<div class="text-sm text-muted text-center p-2">Žádní hráči</div>`;document.getElementById('settings-player-count').textContent=`Hráči (${tempPlayerIds.length}/${maxPlayersForTournament})`;}};renderAddedPlayers();},
+    '_show-settings-modal-inner': () => { const t = getTournament();const maxPlayersForTournament=getPlayerLimitForType(t.type||TOURNAMENT_TYPES.SINGLE);const matchIncludesPlayer=(match,playerId)=>{return getSidePlayerIds(t,match,1).includes(playerId)||getSidePlayerIds(t,match,2).includes(playerId);};tempPlayerIds=[...t.playerIds];const renderAddedPlayers=()=>{const list=document.getElementById('settings-players-list');if(list){list.innerHTML=tempPlayerIds.map((id,index)=>{const player=getGlobalPlayer(id);const hasActivity=t.matches.some(m=>(m.completed||m.score1>0||m.score2>0)&&matchIncludesPlayer(m,id));return`<div class="flex items-center gap-2 surface-alt p-2 rounded-md"><div class="w-6 h-6 ${playerColors[index%playerColors.length]} rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">${player.name.charAt(0).toUpperCase()}</div><span class="flex-grow">${player.name}</span><button data-action="remove-player-settings" data-id="${id}" class="text-red-500 font-bold text-xl disabled:opacity-25" ${hasActivity?'disabled title="${tr('player.has_activity')}"':''}>&times;</button></div>`}).join('')||`<div class="text-sm text-muted text-center p-2">${tr('settings.no_players')}</div>`;document.getElementById('settings-player-count').textContent=tr('tournament_new.players_label', { current: tempPlayerIds.length, max: maxPlayersForTournament });}};openModal(`<div id="settings-modal" class="modal-backdrop"><div class="modal-content space-y-4"><div class="flex justify-between items-center"><h2 class="text-xl font-bold">${tr('settings.title')}</h2><button data-action="close-modal" class="text-muted text-2xl hover:opacity-70">&times;</button></div><p class="text-sm text-muted">${tr('stats.format_label')}: ${getTournamentTypeLabel(t)}</p><div><label for="edit-tournament-name" class="text-sm font-medium">${tr('tournament_new.name_label')}</label><input id="edit-tournament-name" value="${t.name}" class="w-full mt-1 p-2 border rounded-md" ${t.isLocked?'disabled':''}></div><div><label for="add-player-input-settings" id="settings-player-count" class="text-sm font-medium">${tr('tournament_new.players_label', { current: tempPlayerIds.length, max: maxPlayersForTournament })}</label><div id="settings-players-list" class="space-y-2 my-2"></div><div class="relative"${t.isLocked?'hidden':''}><input id="add-player-input-settings" type="text" placeholder="${tr('settings.add_player_placeholder')}" class="w-full p-2 border rounded-md"><div id="autocomplete-container-settings"></div></div></div><button data-action="save-settings" class="btn btn-primary w-full">${tr('settings.save')}</button><div class="border-t pt-4 mt-4 space-y-2"><span class="text-sm font-medium text-muted">${tr('settings.service_actions')}</span><div class="flex gap-2 flex-wrap"><button data-action="copy-tournament" class="btn btn-secondary w-full text-sm"><i class="fa-solid fa-copy"></i> ${tr('settings.copy')}</button><button data-action="toggle-lock-settings" class="btn btn-secondary w-full text-sm">${t.isLocked?tr('settings.unlock'):tr('settings.lock')}</button><button data-action="delete-tournament-settings" class="btn btn-danger w-full text-sm">${tr('settings.delete')}</button></div></div></div></div>`);renderAddedPlayers();setupAutocomplete('add-player-input-settings','autocomplete-container-settings',(id)=>{if(tempPlayerIds.length<maxPlayersForTournament&&!tempPlayerIds.includes(id)){tempPlayerIds.push(id);renderAddedPlayers();}},tempPlayerIds,{minPlayers:0,getCurrentIds:()=>tempPlayerIds});document.getElementById('settings-modal').addEventListener('keydown',(e)=>{if(e.key==='Enter'&&e.ctrlKey){e.preventDefault();document.querySelector('[data-action="save-settings"]').click();}});},
+    'remove-player-settings':(target)=>{const idToRemove=parseInt(target.dataset.id);tempPlayerIds=tempPlayerIds.filter(id=>id!==idToRemove);const t=getTournament();const maxPlayersForTournament=getPlayerLimitForType(t.type||TOURNAMENT_TYPES.SINGLE);const matchIncludesPlayer=(match,playerId)=>{return getSidePlayerIds(t,match,1).includes(playerId)||getSidePlayerIds(t,match,2).includes(playerId);};const renderAddedPlayers=()=>{const list=document.getElementById('settings-players-list');if(list){list.innerHTML=tempPlayerIds.map((id,index)=>{const player=getGlobalPlayer(id);const hasActivity=t.matches.some(m=>(m.completed||m.score1>0||m.score2>0)&&matchIncludesPlayer(m,id));return`<div class="flex items-center gap-2 surface-alt p-2 rounded-md"><div class="w-6 h-6 ${playerColors[index%playerColors.length]} rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">${player.name.charAt(0).toUpperCase()}</div><span class="flex-grow">${player.name}</span><button data-action="remove-player-settings" data-id="${id}" class="text-red-500 font-bold text-xl disabled:opacity-25" ${hasActivity?'disabled title="${tr('player.has_activity')}"':''}>&times;</button></div>`}).join('')||`<div class="text-sm text-muted text-center p-2">${tr('settings.no_players')}</div>`;document.getElementById('settings-player-count').textContent=tr('tournament_new.players_label', { current: tempPlayerIds.length, max: maxPlayersForTournament });}};renderAddedPlayers();},
     'save-settings': async () => {
         const t = getTournament();
         if (t.isLocked) { closeModal(); return; }
@@ -326,19 +327,19 @@ export const allActions = {
         const minPlayers = getMinPlayersForType(t.type || TOURNAMENT_TYPES.SINGLE);
         const maxPlayers = getPlayerLimitForType(t.type || TOURNAMENT_TYPES.SINGLE);
         if (t.playerIds.length < minPlayers) {
-            await showAlertModal(`Minimální počet hráčů pro tento formát je ${minPlayers}.`, 'Chyba');
+            await showAlertModal(tr('settings.min_players_error', { min: minPlayers }), tr('common.error'));
             t.name = originalName;
             t.playerIds = originalPlayerIds;
             return;
         }
         if (isDoubleTournament(t) && t.playerIds.length % 2 !== 0) {
-            await showAlertModal('Čtyřhra vyžaduje sudý počet hráčů.', 'Chyba');
+            await showAlertModal(tr('tournament_new.even_count_required'), tr('common.error'));
             t.name = originalName;
             t.playerIds = originalPlayerIds;
             return;
         }
         if (t.playerIds.length > maxPlayers) {
-            await showAlertModal(`Maximální počet hráčů je ${maxPlayers}.`, 'Chyba');
+            await showAlertModal(tr('settings.max_players_error', { max: maxPlayers }), tr('common.error'));
             t.name = originalName;
             t.playerIds = originalPlayerIds;
             return;
@@ -360,7 +361,7 @@ export const allActions = {
         }
         closeModal();
         navigateTo({ name: 'tournament', tournamentId: t.id });
-        showToast('Nastavení turnaje bylo uloženo', 'success');
+        showToast(tr('settings.saved_toast'), 'success');
     },
     'toggle-lock-settings': (target) => {
         const t = getTournament();
@@ -455,7 +456,7 @@ export const allActions = {
             }
         } catch (error) {
             console.error('❌ [COPY] Chyba při vytváření turnaje:', error);
-            await showAlertModal('Chyba při vytváření kopie turnaje: ' + error.message, 'Chyba');
+            await showAlertModal(tr('copy.error_create', { msg: error.message }), tr('common.error'));
             return;
         }
         if (newTournament) {
@@ -464,7 +465,7 @@ export const allActions = {
             const refreshedTournament = getTournament(newId);
             if (!refreshedTournament) {
                 console.error('❌ [COPY] Nový turnaj nebyl nalezen po načtení stavu!');
-                await showAlertModal('Turnaj byl vytvořen, ale nepodařilo se ho najít. Obnovte stránku.', 'Upozornění');
+                await showAlertModal(tr('copy.error_not_found'), tr('common.warning'));
                 return;
             }
             for (let matchOrder = 0; matchOrder < refreshedTournament.matches.length; matchOrder++) {
@@ -488,21 +489,21 @@ export const allActions = {
                 const matchResult = await apiCall('updateMatch', { id: matchEntityId, data: matchPayload });
                 if (!matchResult?.ok) {
                     console.error('❌ [COPY] Chyba při úpravě zápasu:', matchEntityId);
-                    await showAlertModal('Chyba při kopírování zápasů. Zkontrolujte připojení.', 'Chyba');
+                    await showAlertModal(tr('copy.error_matches'), tr('common.error'));
                     return;
                 }
             }
             await loadState();
         } else {
             console.error('❌ [COPY] Nový turnaj nebyl nalezen po vytvoření!');
-            await showAlertModal('Turnaj byl vytvořen, ale nepodařilo se ho najít. Obnovte stránku.', 'Upozornění');
+            await showAlertModal(tr('copy.error_not_found'), tr('common.warning'));
         }
         closeModal();
         navigateTo({ name: 'main' });
     },
     'delete-tournament-settings': async () => {
         const t = getTournament();
-        if (!(await showConfirmModal(`Opravdu chcete trvale smazat turnaj "${t.name}"?`, 'Smazat turnaj'))) return;
+        if (!(await showConfirmModal(tr('settings.confirm_delete', { name: t.name }), tr('settings.confirm_delete_title')))) return;
         const result = await apiCall('deleteTournament', { id: t.id });
         if (!result?.ok) return;
         closeModal();
@@ -525,7 +526,7 @@ export const allActions = {
         navigateTo({ name: 'main' }, true);
     },
     'delete-tournament': async (target) => {
-        if (!(await showConfirmModal('Opravdu smazat?', 'Smazat turnaj'))) return;
+        if (!(await showConfirmModal(tr('settings.confirm_delete_short'), tr('settings.confirm_delete_title')))) return;
         const tournamentId = parseInt(target.dataset.id);
         const result = await apiCall('deleteTournament', { id: tournamentId });
         if (!result?.ok) return;
@@ -638,19 +639,19 @@ export const allActions = {
         await apiCall('updateMatch', { id: m.id, data: matchPayload });
         const completedCount = t.matches.filter(m => m.completed).length;
         if (completedCount === t.matches.length) {
-            openModal(`<div class="modal-backdrop"><div class="modal-content modal-lg space-y-4"><h2 class="text-2xl font-bold text-center">🏆 Konečné výsledky 🏆</h2>${templates.leaderboardTable(calculateStats(t),t)}<div class="flex gap-2"><button data-action="close-and-home" class="btn btn-secondary flex-1">Zavřít</button><button data-action="copy-tournament" class="btn btn-primary flex-1">Kopírovat turnaj</button></div></div></div>`);
+            openModal(`<div class="modal-backdrop"><div class="modal-content modal-lg space-y-4"><h2 class="text-2xl font-bold text-center">${tr('stats.final_results')}</h2>${templates.leaderboardTable(calculateStats(t),t)}<div class="flex gap-2"><button data-action="close-and-home" class="btn btn-secondary flex-1">${tr('stats.close')}</button><button data-action="copy-tournament" class="btn btn-primary flex-1">${tr('stats.copy_tournament')}</button></div></div></div>`);
         } else {
-            openModal(`<div id="post-match-modal" class="modal-backdrop"><div class="modal-content modal-lg space-y-4"><h2 class="text-xl font-bold text-center">Průběžné pořadí</h2>${templates.leaderboardTable(calculateStats(t),t)}<button data-action="close-and-refresh" class="btn btn-primary w-full">Pokračovat</button></div></div>`);
+            openModal(`<div id="post-match-modal" class="modal-backdrop"><div class="modal-content modal-lg space-y-4"><h2 class="text-xl font-bold text-center">${tr('stats.interim_title')}</h2>${templates.leaderboardTable(calculateStats(t),t)}<button data-action="close-and-refresh" class="btn btn-primary w-full">${tr('stats.continue_btn')}</button></div></div>`);
         }
     },
-    'edit-match':(target)=>{const t=getTournament();const m=getMatch(t,target.dataset.id);const team1Label=formatPlayersLabel(getSidePlayerIds(t,m,1));const team2Label=formatPlayersLabel(getSidePlayerIds(t,m,2));openModal(`<div id="edit-match-modal" class="modal-backdrop"><div class="modal-content space-y-4"><h2 class="text-xl font-bold">Úprava výsledku</h2><div class="flex items-center justify-between gap-2"><span class="font-bold">${team1Label}</span><input id="edit-score1" data-test-id="edit-score1" type="number" value="${m.score1}" class="w-20 text-center text-xl p-2 border rounded"><span class="text-xl">:</span><input id="edit-score2" data-test-id="edit-score2" type="number" value="${m.score2}" class="w-20 text-center text-xl p-2 border rounded"><span class="font-bold">${team2Label}</span></div><div class="flex gap-2"><button data-action="close-modal" data-test-id="edit-match-cancel" class="btn btn-secondary w-full">Zrušit</button><button data-action="save-edited-match" data-test-id="edit-match-save" data-match-id="${m.id}" class="btn btn-primary w-full">Uložit</button></div></div></div>`);document.getElementById('edit-match-modal').addEventListener('keydown', (e)=>{ if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); document.querySelector('[data-action="save-edited-match"]').click(); } });},
+    'edit-match':(target)=>{const t=getTournament();const m=getMatch(t,target.dataset.id);const team1Label=formatPlayersLabel(getSidePlayerIds(t,m,1));const team2Label=formatPlayersLabel(getSidePlayerIds(t,m,2));openModal(`<div id="edit-match-modal" class="modal-backdrop"><div class="modal-content space-y-4"><h2 class="text-xl font-bold">${tr('match.edit_result')}</h2><div class="flex items-center justify-between gap-2"><span class="font-bold">${team1Label}</span><input id="edit-score1" data-test-id="edit-score1" type="number" value="${m.score1}" class="w-20 text-center text-xl p-2 border rounded"><span class="text-xl">:</span><input id="edit-score2" data-test-id="edit-score2" type="number" value="${m.score2}" class="w-20 text-center text-xl p-2 border rounded"><span class="font-bold">${team2Label}</span></div><div class="flex gap-2"><button data-action="close-modal" data-test-id="edit-match-cancel" class="btn btn-secondary w-full">${tr('common.cancel')}</button><button data-action="save-edited-match" data-test-id="edit-match-save" data-match-id="${m.id}" class="btn btn-primary w-full">${tr('common.save')}</button></div></div></div>`);document.getElementById('edit-match-modal').addEventListener('keydown', (e)=>{ if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); document.querySelector('[data-action="save-edited-match"]').click(); } });},
     'save-edited-match': async (target) => {
         const t = getTournament();
         const matchId = target.dataset.matchId;
         const m = getMatch(t, matchId);
         if (!m) {
             console.error("Zápas pro editaci nenalezen:", matchId);
-            await showAlertModal("Došlo k chybě, zápas nebyl nalezen.", 'Chyba');
+            await showAlertModal(tr('match.edit_error'), tr('common.error'));
             return;
         }
         const oldScore1 = m.score1;
@@ -669,7 +670,7 @@ export const allActions = {
         closeModal();
         navigateTo({ name: 'main' });
     },
-    'export-data':async ()=>{if(state.tournaments.length===0&&state.playerDatabase.length===0){await showAlertModal("Není co exportovat.", 'Upozornění');return;}const dataStr=JSON.stringify(state,null,2);const dataBlob=new Blob([dataStr],{type:'application/json'});const url=URL.createObjectURL(dataBlob);const a=document.createElement('a');a.href=url;a.download='ping-pong-turnaje.json';a.click();URL.revokeObjectURL(url);},
+    'export-data':async ()=>{if(state.tournaments.length===0&&state.playerDatabase.length===0){await showAlertModal(tr('import.nothing_to_export'), tr('common.warning'));return;}const dataStr=JSON.stringify(state,null,2);const dataBlob=new Blob([dataStr],{type:'application/json'});const url=URL.createObjectURL(dataBlob);const a=document.createElement('a');a.href=url;a.download='ping-pong-turnaje.json';a.click();URL.revokeObjectURL(url);},
     'close-modal': () => {
         const route = parseRoute(getPath());
         if (isModalRoute(route)) {
@@ -708,9 +709,9 @@ export const allActions = {
         state.settings.voiceAssistEnabled = !state.settings.voiceAssistEnabled;
         apiCall('saveSettings', { key: 'voiceAssistEnabled', value: state.settings.voiceAssistEnabled });
         if (state.settings.voiceAssistEnabled) {
-            speak("Hlasový asistent zapnut.");
+            speak(tr('voice.assist_on'));
         } else {
-            speak("Hlasový asistent vypnut.", true);
+            speak(tr('voice.assist_off'), true);
         }
         renderGameBoard();
     },
